@@ -78,6 +78,6 @@
 	<!-- Canonical URL -->
 	<link
 		rel="canonical"
-		href="{{ page.url | replace:'index.html','' | prepend: site.url }}"
+		href="{{ page.url | replace:'{{ site.baseurl }}/index.html','' | prepend: site.url }}"
 	/>
 </head>
