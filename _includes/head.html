@@ -34,7 +34,7 @@
 	/>
 	{%- else -%}
 	<meta
-		content="{{ '{{ site.baseurl }}/assets/img/amr.jpg' | prepend: site.url }}"
+		content="{{ '{{ site.baseurl }}/assets/img/touring.jpg' | prepend: site.url }}"
 		property="og:image"
 	/>
 	{%- endif -%}
@@ -61,7 +61,7 @@
 	{%- else -%}
 	<meta
 		name="twitter:image:src"
-		content="{{ '{{ site.baseurl }}/assets/img/amr.jpg' | prepend: site.url }}"
+		content="{{ '{{ site.baseurl }}/assets/img/touring.jpg' | prepend: site.url }}"
 	/>
 	{%- endif -%}
 
@@ -78,6 +78,6 @@
 	<!-- Canonical URL -->
 	<link
 		rel="canonical"
-		href="{{ page.url | replace:'{{ site.baseurl }}/index.html','' | prepend: site.url }}"
+		href="{{ page.url | replace:'index.html','' | prepend: site.url }}"
 	/>
 </head>

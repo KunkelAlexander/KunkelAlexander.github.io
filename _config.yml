@@ -1,7 +1,7 @@
 title: Probably not even wrong
 description: Alexander Kunkel's blog on mathematics and physics
 domain: kunkelalexander.github.io      # if you want to force HTTPS, specify the domain without the http at the start, e.g. example.com
-baseurl: /my-blog                      # place folder name if the site is served in a subfolder
+baseurl: /                             # place folder name if the site is served in a subfolder
 url: https://kunkelalexander.github.io # the base hostname and protocol for your site, e.g. http://example.com
 paginate_path: "blog/page:num/"
 permalink: blog/:title/
@@ -26,11 +26,5 @@ navigation:
       url: /contact
 
 social:
-    github: brianmaierjr
-    twitter: brianmaierjr
-    facebook: brianmaierjr
+    github: KunkelAlexander
     email: brimaidesigns@gmail.com
-    linkedin: brianmaierjr
-
-disqus:
-    shortname: brianmaierjr
