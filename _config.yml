@@ -1,7 +1,7 @@
 title: Long Haul
-description: Long Form Jekyll theme built with SASS
-
-url: https://kunkelalexander.github.io/my-blog
+description: Alexander Kunkel's blog on mathematics and physics
+baseurl: /my-blog
+url: https://kunkelalexander.github.io
 paginate_path: "blog/page:num/"
 permalink: blog/:title/
 
