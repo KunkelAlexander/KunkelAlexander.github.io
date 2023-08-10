@@ -34,7 +34,7 @@
 	/>
 	{%- else -%}
 	<meta
-		content="{{ '{{ site.baseurl }}/assets/img/touring.jpg' | prepend: site.url }}"
+		content="{{ '{{ site.baseurl }}/assets/img/amr.jpg' | prepend: site.url }}"
 		property="og:image"
 	/>
 	{%- endif -%}
@@ -61,7 +61,7 @@
 	{%- else -%}
 	<meta
 		name="twitter:image:src"
-		content="{{ '{{ site.baseurl }}/assets/img/touring.jpg' | prepend: site.url }}"
+		content="{{ '{{ site.baseurl }}/assets/img/amr.jpg' | prepend: site.url }}"
 	/>
 	{%- endif -%}
 
@@ -70,7 +70,7 @@
 
 	<!-- Come and get me RSS readers -->
 	<link rel="alternate" type="application/rss+xml" title="{{ site.title }}"
-	href="{{ "/feed.xml" | prepend: site.url }}" />
+	href="{{ "{{ site.baseurl }}/feed.xml" | prepend: site.url }}" />
 
 	<!-- Stylesheet -->
 	<link rel="stylesheet" href="{{ site.baseurl }}/assets/css/style.css" />
