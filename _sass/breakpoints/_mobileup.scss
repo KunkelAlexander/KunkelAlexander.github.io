@@ -181,7 +181,7 @@ HEADER STYLING
 
 .header {
 	background-color: $background-color;
-	background-image: url("../img/amr.png");
+	background-image: url("../img/amr9.png");
 	background-size: cover;
 	background-position: center center;
 	color: white;
@@ -286,6 +286,16 @@ POST STYLING
 	.dropcap {
 		color: $primary-color;
 		margin-right: 0.45rem;
+	}
+	
+	.firstcharacter {
+		color: $primary-color;
+		float: left;
+		font-size: 96px;
+		line-height: 60px;
+		padding-top: 26px;
+		padding-right: 8px;
+		padding-left: 3px;
 	}
 
 	.featuredImage {
