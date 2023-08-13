@@ -26,7 +26,7 @@
 		content="{{ page.date | date_to_xmlschema }}"
 		property="article:published_time"
 	/>
-	<meta content="{{ site.url }}/{{ site.baseurl }}/about/" property="article:author" />
+	<meta content="{{ site.url }}{{ site.baseurl }}/about/" property="article:author" />
 	{%- endif -%} {%- if page.image -%}
 	<meta
 		content="{{ site.url }}{{ site.baseurl }}/assets/img/{{ page.image }}"
@@ -39,7 +39,7 @@
 	/>
 	{%- endif -%}
 
-	<!-- Twitter Cards -->
+	<!-- Twitter Cards 
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:site" content="@{{ site.social.twitter }}" />
 	<meta name="twitter:creator" content="@{{ site.social.twitter }}" />
@@ -56,14 +56,14 @@
 	{%- endif -%} {%- if page.image -%}
 	<meta
 		name="twitter:image:src"
-		content="{{ site.url }}/{{ site.baseurl }}/assets/img/{{ page.image }}"
+		content="{{ site.url }}{{ site.baseurl }}/assets/img/{{ page.image }}"
 	/>
 	{%- else -%}
 	<meta
 		name="twitter:image:src"
 		content="{{ '{{ site.baseurl }}/assets/img/touring.jpg' | prepend: site.url }}"
 	/>
-	{%- endif -%}
+	{%- endif -%}-->
 
 	<!-- Favicon -->
 	<link rel="icon" type="image/x-icon" href="{{ site.baseurl }}/assets/img/favicon.ico" />
@@ -80,4 +80,14 @@
 		rel="canonical"
 		href="{{ page.url | replace:'index.html','' | prepend: site.url }}"
 	/>
+
+
+	<!-- Detect Javascript -->
+	<noscript>
+		<style>
+		  .js-only {
+			display: none;
+		  }
+		</style>
+	  </noscript>
 </head>
