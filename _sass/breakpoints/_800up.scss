@@ -123,6 +123,16 @@ HEADER STYLING
 	}
 }
 
+// Circular image in about me page
+.circular_image {
+	clip-path: circle();
+
+	float: left;
+	width: 200pt;
+	height: 200pt;
+	margin-right: 20pt; 
+}
+
 
 /***************
 MENU STYLING

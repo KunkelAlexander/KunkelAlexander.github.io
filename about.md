@@ -1,24 +1,20 @@
 ---
 layout: default
-title: About the author
+title: About Alexander Kunkel
 ---
 
 <div class="post">
-	<h1 class="pageTitle">About the author</h1>
-	<img src="{{ 'assets/img/amr.png' }}" alt="">
-	<p class="intro">Long Haul is a minimal, long form <a href="http://jekyllrb.com">Jekyll</a> Theme. It can be used as is or customized to your hearts desire.</p>
-	<p>Long Haul was created in honor of all the hard working touring bicycles that have traversed the globe time and time again. Take it for a spin.</p>
-	<h2>Features</h2>
+	<h1 class="pageTitle">About me</h1>
+	<div class="circular_image">
+	<img src="{{ 'img/passbild.jpeg' }}" alt="">
+	</div>
+	<p class="intro">My name is Alexander Kunkel and I am a computational astrophysicist based in Brussels, Belgium.</p>
+	<p>I am passionate about environmental protection, coffee, learning languages, theoretical physics and mathematics. PS: Dear reader: If you ever happen to be in Brussels, I am always up for coffee.</p>
+	<h2>Publications</h2>
 	<ul>
-		<li>Built with the <a href="https://github.com/jekyll/jekyll-sass-converter">Jekyll SASS convertor</a> plugin</li>
-  		<li>SVG Social Icons from <a href="http://customizr.net/icons/">Customizr</a></li>
-  		<li><a href="http://responsive-nav.com/">Responsive Nav Menu</a></li>
-  		<li><a href="https://github.com/snaptortoise/jekyll-rss-feeds">XML Feed for RSS Readers</a></li>
-  		<li>Contact Form via <a href="http://formspree.io/">Formspree</a></li>
-      <li>5 Post Loop with excerpt on Home Page</li>
-  		<li>Previous / Next Post Navigation</li>
-      <li>Estimated Reading Time for posts</li>
-  		<li><a href="https://github.com/adobe-webplatform/dropcap.js">Drop Cap</a> on posts</li>
-  		<li><a href="http://typecast.com/blog/a-more-modern-scale-for-web-typography">A Better Type Scale</a></li>
-  	</ul>
+		<li> My Bachelor's thesis in mathematical physics about consistent symmetry reduction of action principles, especially with respect to Kaluza-Klein reduction in string theory <a href="pdfs/kunkel_bachelor_thesis.pdf">  can be found here.</a></li>
+  		<li> My Master's thesis in theoretical astrophysics about perturbative and numerical calculations in the fuzzy dark matter model and <a href="pdfs/kunkel_masters_thesis.pdf">  can be found here.</a></li>
+
+  		<li>A weak lensing perspective on nonlinear structure formation with fuzzy dark matter together with Tzihong Chiueh and Björn Malte Schäfer, submitted to MNRAS, 2022, <a href="https://arxiv.org/abs/2211.01523">preprint on arXiv</a>.</li>
+  	</ul>-
 </div>
