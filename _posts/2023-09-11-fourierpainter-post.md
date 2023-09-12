@@ -1,13 +1,13 @@
 ---
 layout: post
-title:  "Fourier art classes"
+title:  "Fourier Art Classes"
 date:   2023-09-11
 description: Learn how to draw an elephant using the complex Fourier transform! 
 ---
 
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
-<p class="intro"><span class="firstcharacter">I</span>n this blog's first post, we will visualise a complex Fourier transform as sum of plane waves. </p>
+<p class="intro"><span class="dropcap">I</span>n this blog's first post, we will visualise a complex Fourier transform as sum of plane waves. </p>
 
 
 ## Intro
@@ -40,26 +40,26 @@ def elephant(t):
     return x/100 + 1j*y/100
 
 # number of points at which to sample elephant
-N     = 128
-times = np.linspace(0, 2 * np.pi, N+1)
+N      = 128
+times  = np.linspace(0, 2 * np.pi, N+1)
 # compute time-series data for elephant
-f = elephant(times)
+f      = elephant(times)
 # compute Fourier transform excluding f[-1] == f[0]
-fHat = np.fft.fft(f[:-1])
+fHat   = np.fft.fft(f[:-1])
 {%- endhighlight -%}
 
 In the next step, we compute the IDFT at a given time by first calculating an array containing the plane waves with the magnitudes calculated by the DFT and then sort them from low to high frequencies.
 
 {%- highlight python -%}
 # time at which to evaluate IDFT
-t       = 64 
+t      = 64 
 # plane waves with coefficient determined by FFT of input data 
-waves   = fHat*np.exp(1j*2*np.pi*t*np.arange(N)/N)/len(fHat)
+waves  = fHat*np.exp(1j*2*np.pi*t*np.arange(N)/N)/len(fHat)
 # returns frequencies corresponding to entries of fHat
 # for N even: 0, 1, 2, ..., N/2, -N/2 - 1, ..., -1
-freqs   = np.fft.fftfreq(N)
+freqs  = np.fft.fftfreq(N)
 # sort waves by magnitude of frequencies from slow to fast 
-waves   = waves[np.argsort(np.abs(freqs))]
+waves  = waves[np.argsort(np.abs(freqs))]
 {%- endhighlight -%}
 
 Finally, we plot the elephant as well as the vectors the plane waves describe and the circles they trace:
@@ -73,14 +73,14 @@ plt.style.use('dark_background')
 # plot elephant in neon-look 
 # credit to Dominic Heitz at TowardsDataScience
 linewidths     = np.logspace(-5, 5, 20, base=2)
-transparencies = np.linspace( 1, 0, 20)
+transparencies = np.linspace(+1, 0, 20)
 for lw, alpha in zip(linewidths, transparencies):
     plt.plot(np.real(f[:t+1]), np.imag(f[:t+1]), \
              lw=lw, alpha=alpha, c='#08F7FE')
     
 # first vector starts at origin
-x = 0
-y = 0
+x      = 0
+y      = 0
 # do not show vectors shorter than cutoff
 cutoff = 1e-2
 
