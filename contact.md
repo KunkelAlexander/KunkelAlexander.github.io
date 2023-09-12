@@ -7,7 +7,7 @@ title: Contact me
   <h1 class="pageTitle">Contact Me</h1>
   <div class="contactContent">
     <p class="intro">Contact me via <a href="mailto:kunkel.alexander@{Fill in the particle name of the particle composed of the uud quarks.}mail.com">mail</a>.</p>
-    <p>I am happy about questions about the blog posts, mathematics or physics in general or any other ideas or suggestions! </p>
+    <p>I am happy about any questions, ideas or suggestions regarding the blog! </p>
   </div>
   <!--
   <form action="http://formspree.io/your@mail.com" method="POST">

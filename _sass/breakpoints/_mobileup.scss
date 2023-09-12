@@ -181,7 +181,7 @@ HEADER STYLING
 
 .header {
 	background-color: $background-color;
-	background-image: url("../img/amr9.png");
+	background-image: url("../img/amr_background.png");
 	background-size: cover;
 	background-position: center center;
 	color: white;
@@ -528,4 +528,33 @@ DARK THEME STYLING
 	.footer .container {
 		border-top-color: lighten(black, 10%);
 	}
+}
+
+/***************
+ALEX' MODIFICATIONS OF THE THEME
+***************/
+
+// Circular image in about me page
+.circular_image {
+	display: grid;
+	place-items: center;
+	border-radius: 50%;
+	overflow: hidden;
+	//float: left;
+
+	//text-align: center;
+	width: 160pt;
+	height: 160pt;
+	margin-left: auto;
+	margin-right: auto;
+	margin-bottom: 10%; 
+}
+
+//center images in blog posts
+.center {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 10pt;
+	width: 60%;
 }

@@ -123,16 +123,6 @@ HEADER STYLING
 	}
 }
 
-// Circular image in about me page
-.circular_image {
-	clip-path: circle();
-
-	float: left;
-	width: 200pt;
-	height: 200pt;
-	margin-right: 20pt; 
-}
-
 
 /***************
 MENU STYLING
@@ -296,4 +286,21 @@ DARK THEME STYLING
 	.post .featuredImage:before {
 		background: black;
 	}
+}
+/***************
+ALEX' MODIFICATIONS OF THE THEME
+***************/
+
+// Circular image in about me page
+.circular_image {
+	border-radius: 50%;
+	overflow: hidden;
+	float: left;
+
+	//text-align: center;
+	width: 160pt;
+	height: 160pt;
+	margin-left: 100pt;
+	margin-right: 40pt;
+	margin-bottom: 20pt; 
 }
