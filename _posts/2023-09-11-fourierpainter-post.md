@@ -20,7 +20,8 @@ You may find the accompanying <a href="https://github.com/KunkelAlexander/fourie
 ## Discrete Fourier transform
 
 The discrete Fourier transform (DFT) and its inverse (IDFT) are defined as\
-$$ \hat{f}(\omega) = \sum_{t=0}^{N-1} f(t) \cdot e^{-i 2 \pi t n/N}, \qquad f(t) = \frac{1}{N} \sum_{k=0}^{N-1} \hat{f}(k) \cdot e^{+i 2 \pi k t/N}$$\
+$$ \hat{f}(\omega) = \sum_{t=0}^{N-1} f(t) \cdot e^{-i 2 \pi t n/N}$$\
+$$ f(t) = \frac{1}{N} \sum_{k=0}^{N-1} \hat{f}(k) \cdot e^{+i 2 \pi k t/N}$$\
 for a function $$f$$ taking real or complex values and $$N > 0$$. 
 Discrete Fourier transforms are ubiquitous in image and signal processing. They allow the decomposition of a time-dependent signal into a sum of plane waves with constant frequencies: Each frequency $$k$$ corresponds to a vector of constant length $$\frac{1}{N} \hat{f}(k)$$. At a given time, it points in the direction of the plane wave $$e^{+i 2 \pi k t/N}$$, that is, the point $$(\cos(2 \pi k t/N), \sin(2 \pi k t/N))$$ in the complex plane. The sum of plane waves is equal to adding the vectors with the sum of vectors pointing to the complex number $$f(t)$$. Time evolution implies that each vector rotates at constant speed tracing a circle.
 
