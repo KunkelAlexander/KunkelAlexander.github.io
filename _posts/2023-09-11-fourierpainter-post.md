@@ -11,7 +11,7 @@ description: Learn how to draw an elephant using the complex Fourier transform!
 
 
 ## Intro
-The visualisation is recreated from a series of excellent explanatory videos on the Fourier transform by the Youtube channel <em>3Blue1Brown</em>. As an example, we are going to draw an elephant.<br>
+Discrete Fourier transforms are ubiquitous in image and signal processing. They allow the decomposition of a time-dependent signal into a sum of plane waves with constant frequencies. Today, we are going to visualise them in a cool neon-look using Python. I recommend the the excellent explanatory videos on the Fourier transform by the Youtube channel <em>3Blue1Brown</em> where I first came across this type of visualisation. 
 Before diving in, below is a gif showing an animation of our result:
 <img src="{{ site.baseurl }}/assets/img/fourierpainter-python/animation.gif" alt="" class="center"> 
 You may find the accompanying <a href="https://github.com/KunkelAlexander/fourierpainter-python"> Python code on GitHub </a>. 
@@ -23,9 +23,9 @@ The discrete Fourier transform (DFT) and its inverse (IDFT) are defined as\
 $$ \hat{f}(\omega) = \sum_{t=0}^{N-1} f(t) \cdot e^{-i 2 \pi t n/N}$$\
 $$ f(t) = \frac{1}{N} \sum_{k=0}^{N-1} \hat{f}(k) \cdot e^{+i 2 \pi k t/N}$$\
 for a function $$f$$ taking real or complex values and $$N > 0$$. 
-Discrete Fourier transforms are ubiquitous in image and signal processing. They allow the decomposition of a time-dependent signal into a sum of plane waves with constant frequencies: Each frequency $$k$$ corresponds to a vector of constant length $$\frac{1}{N} \hat{f}(k)$$. At a given time, it points in the direction of the plane wave $$e^{+i 2 \pi k t/N}$$, that is, the point $$(\cos(2 \pi k t/N), \sin(2 \pi k t/N))$$ in the complex plane. The sum of plane waves is equal to adding the vectors with the sum of vectors pointing to the complex number $$f(t)$$. Time evolution implies that each vector rotates at constant speed tracing a circle.
+How to interpret these equations? Each frequency $$k$$ corresponds to a vector of constant length $$\frac{1}{N} \hat{f}(k)$$. At a given time, it points in the direction of the plane wave $$e^{+i 2 \pi k t/N}$$, that is, the point $$(\cos(2 \pi k t/N), \sin(2 \pi k t/N))$$ in the complex plane. The sum of plane waves is equal to adding the vectors with the sum of vectors pointing to the complex number $$f(t)$$. Time evolution implies that each vector rotates at constant speed tracing a circle.
 
-To start, we take the discrete Fourier transform of a periodic ($$f(t) = f(t + \delta t)$$), time-dependent input function. Our input function $$f(t)$$ is [von Neumann's 4-parameter elephant][vonneumann-elephant-wiki].
+This equips us with the knowledge to get started: We take the discrete Fourier transform of a periodic ($$f(t) = f(t + \delta t)$$), time-dependent input function. Our input function $$f(t)$$ is [von Neumann's 4-parameter elephant] [vonneumann-elephant-wiki] based on the paper "Drawing an elephant with four complex parameters" by Jürgen Mayer et al. (2010, DOI:10.1119/1.3254017).
 
 
 {%- highlight python -%}
@@ -33,8 +33,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # set up input data
-# based on paper "Drawing an elephant with four complex parameters"
-# by Jürgen Mayer et al. (2010) DOI:10.1119/1.3254017
 def elephant(t):
     y =  50*np.sin(t)+18*np.sin(2*t)-12*np.cos(3*t)+14*np.cos(5*t)
     x = -60*np.cos(t)+30*np.sin(t)  - 8*np.sin(2*t)+10*np.sin(3*t)
