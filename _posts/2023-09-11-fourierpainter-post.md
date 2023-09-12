@@ -2,7 +2,7 @@
 layout: post
 title:  "Fourier Art Classes"
 date:   2023-09-11
-description: Learn how to draw an elephant using the complex Fourier transform! 
+description: Learn how to draw a neon-style elephant using the complex Fourier transform! 
 ---
 
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
