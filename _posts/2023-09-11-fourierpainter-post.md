@@ -7,7 +7,7 @@ description: Learn how to draw a neon-style elephant using the complex Fourier t
 
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
-<p class="intro"><span class="dropcap">I</span>n this blog's first post, we will visualise a complex Fourier transform as sum of plane waves. </p>
+<p class="intro"><span class="dropcap">I</span>n this blog's first post, we are going to visualise a complex Fourier transform as sum of plane waves. </p>
 
 
 ## Intro
@@ -19,11 +19,13 @@ You may find the accompanying <a href="https://github.com/KunkelAlexander/fourie
 
 ## Discrete Fourier transform
 
-The discrete Fourier transform (DFT) and its inverse (IDFT) are defined as\
-$$ \hat{f}(\omega) = \sum_{t=0}^{N-1} f(t) \cdot e^{-i 2 \pi t n/N}$$\
+The one-dimensional discrete Fourier transform (DFT) and its inverse (IDFT) are defined as\
+$$ \hat{f}(k) = \sum_{t=0}^{N-1} f(t) \cdot e^{-i 2 \pi t n/N}$$\
 $$ f(t) = \frac{1}{N} \sum_{k=0}^{N-1} \hat{f}(k) \cdot e^{+i 2 \pi k t/N}$$\
-for a function $$f$$ taking real or complex values and $$N > 0$$. 
+for a function $$f$$ taking real or complex values, $$N > 0$$ and $$0 \leq t, k < N$$. 
 How to interpret these equations? Each frequency $$k$$ corresponds to a vector of constant length $$\frac{1}{N} \hat{f}(k)$$. At a given time, it points in the direction of the plane wave $$e^{+i 2 \pi k t/N}$$, that is, the point $$(\cos(2 \pi k t/N), \sin(2 \pi k t/N))$$ in the complex plane. The sum of plane waves is equal to adding the vectors with the sum of vectors pointing to the complex number $$f(t)$$. Time evolution implies that each vector rotates at constant speed tracing a circle.
+
+## Drawing an Elephant
 
 This equips us with the knowledge to get started: We take the discrete Fourier transform of a periodic ($$f(t) = f(t + \delta t)$$), time-dependent input function. Our input function $$f(t)$$ is [von Neumann's 4-parameter elephant] [vonneumann-elephant-wiki] based on the paper "Drawing an elephant with four complex parameters" by Jürgen Mayer et al. (2010, DOI:10.1119/1.3254017).
 
@@ -53,7 +55,7 @@ In the next step, we compute the IDFT at a given time by first calculating an ar
 # time at which to evaluate IDFT
 t      = 64 
 # plane waves with coefficient determined by FFT of input data 
-waves  = fHat*np.exp(1j*2*np.pi*t*np.arange(N)/N)/len(fHat)
+waves  = fHat*np.exp(1j*2*np.pi*t*np.arange(N)/N)/N
 # returns frequencies corresponding to entries of fHat
 # for N even: 0, 1, 2, ..., N/2, -N/2 - 1, ..., -1
 freqs  = np.fft.fftfreq(N)
