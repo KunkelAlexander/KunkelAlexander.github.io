@@ -66,7 +66,7 @@ fix  = np.fft.ifftn(fk * np.exp(1j*(kx*dx/2          )), norm="forward")
 fiy  = np.fft.ifftn(fk * np.exp(1j*(        + ky*dx/2)), norm="forward")
 fixy = np.fft.ifftn(fk * np.exp(1j*(kx*dx/2 + ky*dx/2)), norm="forward")
 # zip original array and shifted arrays
-fi3      = np.zeros((Ni, Ni), dtype=complex) 
+fi3             = np.zeros((Ni, Ni), dtype=complex) 
 fi3[ ::2,  ::2] = f(tx, ty) 
 fi3[ ::2, 1::2] = fix
 fi3[1::2,  ::2] = fiy
