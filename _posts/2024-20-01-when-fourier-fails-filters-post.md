@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "When Fourier fails"
+title:  "When Fourier fails: Filters"
 date:   2024-01-21
-description: Learn how to interpolate non-periodic, uniform data with high accuracy!
+description: Learn how to interpolate non-periodic, uniform data using filters!
 ---
 
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
@@ -11,7 +11,7 @@ description: Learn how to interpolate non-periodic, uniform data with high accur
 
 
 ## Intro
-This post looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. Usually, one will opt for polynomial interpolation when dealing with non-periodic, smooth data. In this case, the accuracy of the interpolation is determined by the order of the polynomial interpolants. Yet, the interpolant order cannot become arbitrarily high on a uniform grid. The accuracy of polynomial interpolation on uniform grids is usually limited by instabilities such as [Runge's phenomenon][runge-wiki].
+This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. Usually, one will opt for polynomial interpolation when dealing with non-periodic, smooth data. In this case, the accuracy of the interpolation is determined by the order of the polynomial interpolants. Yet, the interpolant order cannot become arbitrarily high on a uniform grid. The accuracy of polynomial interpolation on uniform grids is usually limited by instabilities such as [Runge's phenomenon][runge-wiki].
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/runge.png" alt="">
 
@@ -31,7 +31,7 @@ Such alternative approaches include
 - Periodic SVD extensions
 - Gram-Fourier extensions
 
-In the following, we will explore some of these approaches and compare their benefits and drawbacks.  You may find the accompanying <a href="https://github.com/KunkelAlexander/nonperiodicinterpolation-python"> Python code on GitHub </a>.
+In the following, we will look at filters.  You may find the accompanying <a href="https://github.com/KunkelAlexander/nonperiodicinterpolation-python"> Python code on GitHub </a>.
 
 
 ## Filters
