@@ -8,7 +8,7 @@ title: About Alexander Kunkel
 	<div class="circular_image">
 	<img src="{{ site.baseurl }}/assets/img/about/2023_quadratic.jpeg" alt="">
 	</div>
-	<p class="intro">Computational astrophysicist based in Belgium and Germany.</p>
+	<p class="intro">Data analyst at Transport & Environment, based in Brussels.</p>
 	<p>I am passionate about environmental protection, coffee, learning languages, playing guitar, theoretical physics and mathematics.</p>
 	<h2>Publications</h2>
 	<ul>
