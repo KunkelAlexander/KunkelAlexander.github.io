@@ -31,19 +31,15 @@ Schematically, the process looks as follows:
 - Accurate Fourier transform of antisymmetric extension
 
 It is useful to construct an antisymmetric extension because the $$0^{th}$$ order derivatives, i.e. the function values, are known already.
-Ideally, a sine transform should be used instead of the of the antisymmetric extension. It has the same analytical properties as the antisymmetric extension and is twice as fast as a DFT. The stability and complexity of the algorithm is determined by how many derivatives are estimated. All odd derivatives of the antisymmetric extension are continuous at the domain boundary for smooth input data. Therefore, ensuring continuity of the function at the domain boundary implies that the Fourier coefficients decay like $$\mathcal{O}(N^{-3})$$, faster than without the antisymmetric extension. Note that there are additional discretisation errors from the DFT and the approximation of the boundary derivatives discussed in the above references.
-
-The following figure demonstrates the latter process using an exponential function.
+Ideally, a sine transform should be used instead of the of the antisymmetric extension. It has the same analytical properties as the antisymmetric extension and is twice as fast as a DFT. The following figure demonstrates the latter process using an exponential function.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_trigonometric_extension.png" alt="">
 Computing derivatives by summing analytical derivatives of cosine functions with the appropriate coefficients and numerical derivatives of the Fourier transform, we see that while the first derivate can be computed very accurately, higher derivatives become less and less accurate.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_trigonometric_accuracy.png" alt="">
 
-Finally, the decay of the Fourier coefficients can be beautifully visualised. We can subtract a linear combination of two cosine functions such that the remainder satisfies Dirichlet boundary conditions. The antisymmetric extension $$f_{ext} \in C^0$$ in this case and its Fourier coefficients decay like $$\mathcal{O}(N^{-3}$)$. Every further pair of trigonometric functions subtracted increases the order of convergence by $$2$$.
+Finally, the decay of the Fourier coefficients can be beautifully visualised. The stability and complexity of the algorithm is determined by how many derivatives are estimated. All odd derivatives of the antisymmetric extension are continuous at the domain boundary for smooth input data. Therefore, ensuring continuity of the function at the domain boundary implies that the Fourier coefficients decay like $$\mathcal{O}(N^{-3})$$, faster than without the antisymmetric extension. This can be done by subtracting a linear combination of two cosine functions such that the remainder satisfies Dirichlet boundary conditions. Every further pair of trigonometric functions subtracted increases the order of convergence by $$2$$. Note that there are additional discretisation errors from the DFT and the approximation of the boundary derivatives discussed in the above references.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_trigonometric_decay.png" alt="">
 
-The following code shows the computation of suitable linear combinations of cosine functions for the subtraction
-
-
+The following code shows the computation of suitable linear combinations of cosine functions for the subtraction.
 {%- highlight python -%}
 import numpy as np
 import scipy
