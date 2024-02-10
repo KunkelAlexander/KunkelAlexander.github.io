@@ -21,9 +21,9 @@ Finite difference stencils work by discretising differential operators on a disc
 
 $$
 \begin{bmatrix}
-1 & 0 & 0 \\
-1 & \frac{2}{dx} & 0 \\
-1 & \frac{2^2}{2! dx^2} & \frac{2^3}{3! dx^3}
+\Delta x & \frac{\Delta x}{2!} & \frac{\Delta x}{3!}  \\
+2\cdot \Delta x & \frac{(2\cdot \Delta x)^2}{2!} & \frac{(2\cdot \Delta x)^3}{3!} \\
+3\cdot \Delta x & \frac{(3\cdot \Delta x)^2}{2!} & \frac{(3\cdot \Delta x)^3}{3!}
 \end{bmatrix}
 \cdot
 \begin{bmatrix}
@@ -33,9 +33,9 @@ f'''(x_0)
 \end{bmatrix}
 =
 \begin{bmatrix}
-f(x_1) - f(x_0) \\
-f(x_2) - f(x_0) \\
-f(x_3) - f(x_0)
+f(x_0 + \Delta x) - f(x_0) \\
+f(x_0 + 2\cdot \Delta x) - f(x_0) \\
+f(x_0 + 3\cdot \Delta x) - f(x_0)
 \end{bmatrix}
 $$
 
