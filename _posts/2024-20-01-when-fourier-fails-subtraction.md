@@ -15,18 +15,35 @@ This series of posts looks into different strategies for interpolating non-perio
 
 
 ## Subtraction Methods
-To use the Fourier transform with high accuracy, we need to find a way to make our data periodic. Subtraction methods achieve this by decomposing the data into a periodic and a non-periodic part. They first estimate the data's derivatives at the domain boundary, usually by employing finite difference approximations, and then find a suitable set of non-periodic functions that satisfies the estimated boundary conditions, usually by solving a linear system. These basis functions are then subtracted from the original data and leave a periodic function that allows for an accurate Fourier transform. At the same time, the basis functions can be manipulated analytically. Subtraction methods commonly subtract either polynomials or trigonometric functions. Their accuracy depends on being able to estimate the data's derivatives at the boundaries accurately. Since the Fourier transform exhibits $$n+1$$-th order convergence if the $$n$$-th derivative is continuous, satisfying $$m$$ boundary conditions with $$m$$ basis functions leads to $$m+1$$th order convergence. Finally, the maximum order of convergence is fundamentally limited by a variant of Runge's phenomenon again since it is impossible to estimate arbritrarily high-order derivatives using polynomial stencils.
+To utilize the Fourier transform with high accuracy, we must make our data periodic. Subtraction methods achieve this by decomposing the data into periodic and non-periodic parts. Initially, they estimate the data's derivatives at the domain boundary, often employing finite difference approximations. Then, they identify a suitable set of non-periodic functions that meet the estimated boundary conditions, typically by solving a linear system. These basis functions are subtracted from the original data, leaving a periodic function conducive to an accurate Fourier transform. Moreover, the basis functions can be analytically manipulated.
 
-In the following, I implement a subtraction method described in Matthew Green's M.Sc. thesis <a href="https://core.ac.uk/download/215443759.pdf"> Spectral Solution with a Subtraction Method to Improve Accuracy</a>. It estimates the boundary derivatives using finite-difference stencils and subtracts a inhomogeneous linear combination of cosine functions to leave a homogeneous remainder. This remainder can either be expanded using a cosine transform or less efficiently antisymmetrically expanded into a periodic function and then manipulated using a Fourier transform.
+
+Subtraction methods commonly involve subtracting either polynomials or trigonometric functions. Their accuracy hinges on the precise estimation of the data's derivatives at the boundaries. Since the Fourier transform demonstrates n+1-th order convergence if the n-th derivative is continuous, the Fourier coefficients decay as $\propto \mathcal{O}(\frac{1}{k^{n+1}})$. However, the maximum order of convergence is fundamentally limited by a variant of Runge's phenomenon, as it is impossible to estimate arbitrarily high-order derivatives using polynomial stencils. In addition, high-order subtraction methods may be relatively unstable when building PDE solvers. In terms of accuracy, PDE solver using subtraction methods cannot compete with DFTs on periodic grids because they become unstable for high subtraction orders in my experience based on wave and fluid equations.
+
+In the following, I will implement two subtraction methods: trigonometric and polynomial subtraction. The trigonometric method, described in Matthew Green's M.Sc. thesis <a href="https://core.ac.uk/download/215443759.pdf"> Spectral Solution with a Subtraction Method to Improve Accuracy</a>, estimates boundary derivatives using finite-difference stencils and subtracts an inhomogeneous linear combination of cosine functions, leaving a homogeneous remainder. This remainder can either be expanded using a sine transform or, less efficiently, antisymmetrically expanded into a periodic function and then manipulated using a Fourier transform.
+Schematically, the process looks as follows:
+- Given a grid: $0, \Delta x, ..., L - \Delta x, L$
+- Estimate even derivatives $f^{(0)}(x_0), f^{(0)}(x_1), f^{(2)}(x_0), f^{(2)}(x_1), $... of $f(x)$ at $x_0=0$ and $x_1 = L$
+- Set them to $0$ by subtracting suitable linear combinations of cosine functions evaluated on the discrete grid
+- Define antisymmetric extension as {$f(x_0), ..., f(x_1), -f(x_1 - \Delta x), ..., -f(x_0 + \Delta x)$}
+- Accurate Fourier transform of antisymmetric extension
+
+It is useful to construct an antisymmetric extension because the 0th order derivatives, i.e. the function values, are known already.
+Ideally, a sine transform should be used instead of the of the antisymmetric extension. It has the same analytical properties as the antisymmetric extension and is twice as fast as a DFT. The stability and complexity of the algorithm is determined by how many derivatives are estimated. All odd derivatives of the antisymmetric extension exist at the domain boundary for smooth input data. Therefore, ensuring continuity of the 0th, 2nd, 4th etc. derivative at the domain boundary ensures 3rd, 5th, 7th order etc. convergence. There are additional discretisation errors from the DFT and the approximation of the boundary derivatives discussed in the above references.
+
 The following figure demonstrates the latter process using an exponential function.
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_1.png" alt="">
-Computing derivatives by summing analytical derivatives of cosine functions with the appropriate coefficients and numerical derivatives of the Fourier transform, we see that while the first derivate can be computed very accurately without the need of a buffer zone, higher derivatives become less and less accurate.
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_2.png" alt="">
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_trigonometric_extension.png" alt="">
+Computing derivatives by summing analytical derivatives of cosine functions with the appropriate coefficients and numerical derivatives of the Fourier transform, we see that while the first derivate can be computed very accurately, higher derivatives become less and less accurate.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_trigonometric_accuracy.png" alt="">
 
-Finally,
+Finally, the decay of the Fourier coefficients can be beautifully visualised. We can subtract a linear combination of two cosine functions such that the remainder satisfies Dirichlet boundary conditions. The antisymmetric extension $f_{ext} \in C^0$ in this case and its Fourier coefficients decay as $\propto k^{-3}$. Every further pair of trigonometric functions subtracted increases the order of convergence by 2.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_trigonometric_decay.png" alt="">
+
+The following code shows the computation of suitable linear combinations of cosine functions for the subtraction
 
 
-{%- highlight python -%}import numpy as np
+{%- highlight python -%}
+import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 
@@ -100,7 +117,7 @@ def backward_difference_vector(order, f):
         diff[j - 1] = f[-1 - j] - f[-1]
     return diff
 
-def iterative_refinement(A, b, tolerance=1e-9):
+def iterative_refinement(A, b, tolerance=1e-12):
     """
     Solve a system of linear equations Ax = b using iterative refinement.
 
@@ -123,7 +140,7 @@ def iterative_refinement(A, b, tolerance=1e-9):
         residual = b - A @ x
         residual_error = np.sum(np.abs(residual))
         iteration += 1
-        if iteration > 100:
+        if iteration > 1000:
             break
 
     return x
@@ -156,11 +173,13 @@ def cosine_difference_vector(order, f, Dl, Dr):
     b = np.zeros(2 * order)
     b[0] = f[0]
     b[1] = f[-1]
+    #Even derivatives at left boundary
     for i in range(1, order):
-        b[i * 2] = Dl[i] / (np.pi) ** (2 * i)
+        b[i * 2] = Dl[2*i-1] / (np.pi) ** (2 * i)
 
+    #Even derivatives at right boundary
     for i in range(1, order):
-        b[i * 2 + 1] = Dr[i] / (np.pi) ** (2 * i)
+        b[i * 2 + 1] = Dr[2*i-1] / (np.pi) ** (2 * i)
 
     return b
 
@@ -203,13 +222,13 @@ def reconstruct(C, x, derivative_order=0):
 
     return f
 
-def get_shift_function(f, order, x):
+def get_shift_function(f, n_accuracy, x):
     """
     Calculate the shift function for a given function, order, and x values.
 
     Args:
         f (numpy.ndarray): The function values.
-        order (int): The order of the shift function.
+        n_accuracy (int): The number of even derivatives made continuous
         x (numpy.ndarray): The x values.
 
     Returns:
@@ -217,21 +236,22 @@ def get_shift_function(f, order, x):
     """
     x_eval = shift_x(x)
     dx = x_eval[1] - x_eval[0]
-    A = forward_difference_matrix(order, dx)
-    b = forward_difference_vector(order, f)
+    A = forward_difference_matrix(n_accuracy * 2, dx)
+    b = forward_difference_vector(n_accuracy * 2, f)
     Dl = iterative_refinement(A, b)
 
-    A = backward_difference_matrix(order, dx)
-    b = backward_difference_vector(order, f)
+    A = backward_difference_matrix(n_accuracy * 2, dx)
+    b = backward_difference_vector(n_accuracy * 2, f)
 
     Dr = iterative_refinement(A, b)
 
-    A = cosine_difference_matrix(int(order / 2) + 1)
-    b = cosine_difference_vector(int(order / 2) + 1, f, Dl, Dr)
+    A = cosine_difference_matrix(n_accuracy + 1)
+    b = cosine_difference_vector(n_accuracy + 1, f, Dl, Dr)
     C = iterative_refinement(A, b)
 
     shift = reconstruct(C, x_eval)
     return shift, C
+
 
 def antisymmetric_extension(f):
     """
@@ -263,13 +283,17 @@ def get_k(p, dx):
     return np.fft.ifftshift(k)
 
 
-
 # Configurable parameters
-N = 100  # Size of input domain
-order = 5  # Order of the subtraction variables
+N        = 100  # Size of input domain
+# Accuracy of subtraction
+# For a given n_accuracy, n_accuracy even derivatives are made continuous (and the function values at the boundaries are subtracted)
+# Therefore, the antisymmetric extension will be in C1 + 2 * n_accuracy derivatives
+# The Fourier coefficients then decay as O(3 + 2 * n_accuracy)
+n_accuracy = 2
 
 # Define the domain and the function
 L = np.pi
+
 x = np.linspace(0, L, N)
 def func(x):
     return np.exp(x)
@@ -277,7 +301,7 @@ f = func(x)
 dx = x[1] - x[0]
 
 # Get the shift function and coefficients
-shift, C = get_shift_function(f, order, x)
+shift, C = get_shift_function(f, n_accuracy, x)
 hom      = f - shift
 f_ext    = antisymmetric_extension(hom)
 f_hat    = scipy.fft.fft(f_ext)
@@ -302,22 +326,29 @@ plt.plot(shift, c = colors[2], label=r"$f_{inhom}$")
 plt.axvline(len(x), ls="dashed", c="w")
 plt.plot(f_ext, c = colors[1], ls="dashed", label="Antisymmetric extension")
 plt.legend()
-plt.savefig("figures/subtraction_1.png")
+plt.savefig("figures/subtraction_trigonometric_extension.png")
 plt.show()
 
 # Number of subplots
-num_subplots = 3
+num_subplots = 2
 
 # Create subplots
-fig, axs = plt.subplots(1, num_subplots, figsize=(5 * num_subplots, 5), dpi=200)
+fig, axs = plt.subplots(num_subplots, 1,  figsize=(5 , 3* num_subplots), dpi=200)
+
 
 # Loop through different subtraction orders
-for i, o in enumerate([1, 4, 6]):
+for i, o in enumerate([2, 5]):
     forg = func(x)
     frec = scipy.fft.ifft(f_hat * (1j * k) ** o).real[:N]  # Use only the first N elements (the original domain)
     reco = reconstruct(C, x, derivative_order = o)
     sumo = frec + reco
 
+    axs[i].spines['top'].set_visible(False)
+    axs[i].spines['right'].set_visible(False)
+    axs[i].spines['bottom'].set_visible(False)
+    axs[i].spines['left'].set_visible(False)
+    axs[i].get_xaxis().set_ticks([])
+    axs[i].get_yaxis().set_ticks([])
 
     # Plot the sum and the original function in subplots
     axs[i].set_title(f"Derivative order {o} with L1 error {np.mean(np.abs(sumo - forg)):3.3e}")
@@ -326,19 +357,208 @@ for i, o in enumerate([1, 4, 6]):
     axs[i].legend()
 
 # Adjust layout
-plt.tight_layout()
-plt.savefig("figures/subtraction_2.png")
-plt.show()
+fig.savefig("figures/subtraction_trigonometric_accuracy.png")
+
 
 {%- endhighlight -%}
 
-When the spectrum is filtered with a constant function, the decay of the Fourier coefficients is not modified. Accordingly, we can observe Gibb's phenomenon.
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/filter_1.png" alt="">
+## Polynomial subtraction
 
-Filtering with a smoothly decaying filter function significantly reduces oscillations and increases the accuracy of the reconstruction.
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/filter_2.png" alt="">
+For the polynomial subtraction, I demonstrate a slightly different approach. Instead of constructing an antisymmetric extension, I simply subtract all derivatives so that the remainder becomes periodic. The remainder can then be expanded using a DFT. In principle, one might expect antisymmetric extensions to yield higher accuracy because they achieve more continuous derivatives with the same polynomial order. However, my numerical experiments indicate that this is not necessarily the case.
+
+The following figure demonstrates the subtraction of a 9th-order polynomial from an exponential function. It is evident that a high-order polynomial can approximate exponential functions well, and the remainder is close to zero.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_polynomial_extension.png" alt="">
+
+A suitably chosen 9th-order subtraction polynomial ensures that the homogeneous remainder is continuously differentiable four times. Accordingly, we expect order unity oscillation from the fifth derivative onwards, as confirmed by plotting the error of the reconstructed derivatives:
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_polynomial_accuracy.png" alt="">
+
+It is worth noting that, in my experience, all spectral methods acting on non-periodic data (including Chebyshev methods on Chebyshev grids) share one drawback: reconstruction errors at the domain boundaries close to the discontinuities are often orders of magnitude higher than in the domain center. This is also demonstrated in the following figure, where the logarithm of the reconstruction error is shown in blue, and the reconstructed function is in red.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_polynomial_log_accuracy.png" alt="">
+
+Studying the decay of the polynomial coefficients reveals that every pair of polynomials subtracted increases the order of convergence by $1$, not by $2$ as in the case of the antisymmetric extension.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_polynomial_extension.png" alt="">
 
 
+{%- highlight python -%}
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.fft
+import scipy.interpolate
+
+# Constants for finite difference modes
+MODE_FORWARD = 0
+MODE_CENTERED = 1
+MODE_BACKWARD = 2
+MODE_CUSTOM = 3
+
+# Max derivative order allowed
+MAX_DERIVATIVE_ORDER = 30
+
+# Finite difference stencils for forward, backward, and centered modes
+fstencils = []
+bstencils = []
+cstencils = []
+
+
+def compute_fd_coefficients(derivative_order, n_accuracy, mode, stencil=None):
+    """
+    Compute finite difference coefficients for given derivative order and n_accuracy.
+
+    Args:
+        derivative_order (int): The order of the derivative.
+        n_accuracy (int): The n_accuracy of the approximation.
+        mode (int): The mode of finite difference (forward, backward, centered, custom).
+        stencil (np.array): The points used for the finite difference.
+
+    Returns:
+        tuple: A tuple containing the stencil and the coefficients.
+    """
+    stencil_length = derivative_order + n_accuracy
+
+    if mode == MODE_FORWARD:
+        stencil = np.arange(0, stencil_length)
+    elif mode == MODE_BACKWARD:
+        stencil = np.arange(-stencil_length + 1, 1)
+    elif mode == MODE_CENTERED:
+        if n_accuracy % 2 != 0:
+            raise ValueError("Centered stencils available only with even n_accuracy orders")
+        if (stencil_length % 2 == 0) and stencil_length >= 4:
+            stencil_length -= 1
+        half_stencil_length = int((stencil_length - 1) / 2)
+        stencil = np.arange(-half_stencil_length, half_stencil_length + 1)
+    elif mode == MODE_CUSTOM:
+        if stencil is None:
+            raise ValueError("Custom stencil needed in MODE_CUSTOM")
+        stencil_length = len(stencil)
+        if derivative_order >= stencil_length:
+            raise ValueError("Derivative order must be smaller than stencil length")
+
+    A = np.zeros((stencil_length, stencil_length))
+    b = np.zeros(stencil_length)
+
+    for i in range(stencil_length):
+        A[i, :] = stencil ** i
+    b[derivative_order] = np.math.factorial(derivative_order)
+
+    coefficients = np.linalg.solve(A, b)
+    return stencil, coefficients
+
+
+# Populate the finite difference stencils for forward, backward, and centered modes
+for i in range(MAX_DERIVATIVE_ORDER):
+    N_MAX = i + 2
+    fstencils_at_order_i = []
+    bstencils_at_order_i = []
+    cstencils_at_order_i = []
+    for order in range(1, N_MAX):
+        c = compute_fd_coefficients(order, N_MAX - order + ((N_MAX - order) % 2 != 0), MODE_CENTERED)
+        f = compute_fd_coefficients(order, N_MAX - order, MODE_FORWARD)
+        b = compute_fd_coefficients(order, N_MAX - order, MODE_BACKWARD)
+        fstencils_at_order_i.append(f)
+        bstencils_at_order_i.append(b)
+        cstencils_at_order_i.append(c)
+    fstencils.append(fstencils_at_order_i)
+    bstencils.append(bstencils_at_order_i)
+    cstencils.append(cstencils_at_order_i)
+
+
+def compute_derivative(f, j, dx, stencil, derivative_order=1):
+    """
+    Compute the derivative of a function at a point.
+
+    Args:
+        f (np.array): The function values.
+        j (int): The index of the point.
+        dx (float): The spacing between points.
+        stencil (tuple): The stencil and coefficients for finite differences.
+        derivative_order (int): The order of the derivative.
+
+    Returns:
+        float: The derivative of the function at point j.
+    """
+    shifts, coeff = stencil
+    f_dx = sum(f[j + shift] * coeff[i] for i, shift in enumerate(shifts))
+    return f_dx / dx ** derivative_order
+
+
+def get_polynomial_shift_function(f, n_accuracy, x):
+    """
+    Compute the polynomial shift function to fulfill Dirichlet boundary conditions.
+
+    Args:
+        f (np.array): The function values.
+        n_accuracy(int): The number of derivatives made continuous: f - shift will be in the set of continuous, order-times differentiable functions C^order(x)
+        x (np.array): The domain of the function.
+
+    Returns:
+        tuple: The polynomial shift function and the interpolating polynomial.
+    """
+    dx = x[1] - x[0]
+    x0, x1 = x[0], x[-1]
+    f0, f1 = f[0], f[-1]
+
+    N_columns    = 1 + n_accuracy
+    fd_f_stencil = fstencils[n_accuracy - 1]
+    fd_b_stencil = bstencils[n_accuracy - 1]
+
+    B = np.zeros((N_columns, len(f)), f.dtype)
+
+    bc_l = [(i + 1, compute_derivative(f, 0, dx, fd_f_stencil[i], i + 1)) for i in range(n_accuracy)]
+    bc_r = [(i + 1, compute_derivative(f, -1, dx, fd_b_stencil[i], i + 1)) for i in range(n_accuracy)]
+
+    bc = (bc_l, bc_r)
+
+    poly = scipy.interpolate.make_interp_spline([x0, x1], [f0, f1], k=2 * n_accuracy + 1, bc_type=bc, axis=0)
+
+    for i in range(n_accuracy + 1):
+        B[i] = poly(x, i * 2)
+
+    return B[:, :len(x)], poly
+
+
+# Configurable parameters
+N        = 100  # Size of input domain
+# Accuracy of the subtraction, this leads to a polynomial of order 2*n_accuracy + 1 being subtracted from the original function
+n_accuracy = 4
+
+# Define the domain and the function
+L = np.pi
+x = np.linspace(0, L, N)
+
+
+def func(x):
+    """Function to compute e^x."""
+    return np.exp(x)
+
+
+f = func(x)
+dx = x[1] - x[0]
+
+# Create shift function such that f - B fulfills Dirichlet boundary conditions
+shift, polynomial_func = get_polynomial_shift_function(f = f, n_accuracy=n_accuracy, x = x)
+f_ext = f - shift[0]
+f_hat = scipy.fft.fft(f_ext)
+
+# Function to get k values
+k = get_k(f_hat, dx)
+
+colors = [
+    '#08F7FE',  # teal/cyan
+    '#FE53BB',  # pink
+    '#F5D300',  # yellow
+    '#00ff41',  # matrix green
+]
+
+plt.style.use('dark_background')
+plt.figure(figsize=(5, 3), dpi=200)
+plt.axis("off")
+plt.plot(f, c=colors[0], lw=3, label=r"$f(x) = e^x = f_{hom} + f_{inhom}$")
+plt.plot(f_ext, c=colors[1], label=r"$f_{hom}$")
+plt.plot(shift[0], c=colors[2], label=r"$f_{inhom}$")
+plt.legend()
+plt.savefig("figures/subtraction_polynomial_extension.png")
+plt.show()
+{%- endhighlight -%}
 
 
 [runge-wiki]: https://en.wikipedia.org/wiki/Runge's_phenomenon

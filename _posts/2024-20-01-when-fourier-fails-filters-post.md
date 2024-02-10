@@ -35,8 +35,17 @@ In the following, we will look at filters.  You may find the accompanying <a hre
 
 
 ## Filters
-When we compute the Fourier transform of a non-periodic function, the Fourier coefficients for high frequencies decay slowly. These high frequency components then lead to the Gibb's phenomenon. One can reduce the Gibb's phenomenon by suppressing the high frequency components in the Fourier transform. That is the basic idea of filters: We multiply the spectrum by a smooth function, also called filter. The filter should decay to zero for high frequencies while not modifying the low-frequency components.
+When we compute the Fourier transform of a non-periodic function, the Fourier coefficients for high frequencies decay slowly. These high frequency components then lead to the Gibb's phenomenon. One can reduce the Gibb's phenomenon by suppressing the high frequency components in the Fourier transform. That is the basic idea of filters: We multiply the spectrum by a smooth function, also called filter. The filter should decay to zero for high frequencies while not modifying the low-frequency components. There are different choices of filters depending on the exact nature of the data. However, in general the multiplication with a filter always leads to a loss of information. I did not find them to be useful to build  a high-accuracy PDE solver since they do not conserve the sum of the absolute values of the spectrum of a function (i.e. the mass). Moreover, when trying to fine-tune them to increase accuracy one quickly loses stability for PDE solvers. In general, their accuracy is also low for small domains.
 
+### Filters reduce Gibb's phenomenon
+
+When the spectrum is filtered with a constant function, the decay of the Fourier coefficients is not modified. Accordingly, we can observe Gibb's phenomenon.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/filter_1.png" alt="">
+
+Filtering with a smoothly decaying filter function significantly reduces oscillations and increases the accuracy of the reconstruction.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/filter_2.png" alt="">
+
+The following code produces the above figures.
 
 {%- highlight python -%}
 # import libraries
@@ -110,12 +119,6 @@ for i, filter in enumerate(filters):
 
     plt.show()
 {%- endhighlight -%}
-
-When the spectrum is filtered with a constant function, the decay of the Fourier coefficients is not modified. Accordingly, we can observe Gibb's phenomenon.
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/filter_1.png" alt="">
-
-Filtering with a smoothly decaying filter function significantly reduces oscillations and increases the accuracy of the reconstruction.
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/filter_2.png" alt="">
 
 
 
