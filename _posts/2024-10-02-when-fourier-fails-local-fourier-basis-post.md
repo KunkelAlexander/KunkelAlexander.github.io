@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "When Fourier fails: Local fourier basis or Fourier extensions of the second kind"
+title:  "When Fourier fails: Mollifiers & Fourier extensions of the second kind"
 date:   2024-02-10
-description: Use bell functions and antisymmetric extensions to build a PDE solver!
+description: Learn more about mollifiers to obtain periodic extensions.
 ---
 
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
@@ -11,36 +11,40 @@ description: Use bell functions and antisymmetric extensions to build a PDE solv
 
 
 ## Intro
-This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In the following, we will consider the benefits of mollifiers, that is, convolutions of the non-periodic data with smooth bell functions around the discontinuity to make it continuous. The particular method presented here is presented as Fourier extension of the second kind in Boyd's excellent paper <a href="https://www.sciencedirect.com/science/article/abs/pii/S0021999102970233"> A Comparison of Numerical Algorithms for Fourier Extension of the First, Second, and Third Kinds </a>. It also features in the paper <a href=https://link.springer.com/article/10.1007/BF01060869>Spectral multidomain technique with Local Fourier Basis</a> by Israeli et al. who use it to build PDE solvers. You may find the accompanying <a href="https://github.com/KunkelAlexander/nonperiodicinterpolation-python"> Python code on GitHub </a>.
+This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In this post, we delve into the benefits of mollifiers, which involve convolutions of non-periodic data with smooth bell functions around discontinuities to ensure continuity. The method presented here is known as the Fourier extension of the second kind, as described in Boyd's insightful paper <a href="https://www.sciencedirect.com/science/article/abs/pii/S0021999102970233"> A Comparison of Numerical Algorithms for Fourier Extension of the First, Second, and Third Kinds </a>. It also features in the paper <a href="https://link.springer.com/article/10.1007/BF01060869">Spectral multidomain technique with Local Fourier Basis</a> by Israeli et al. who use it to build PDE solvers. You may find the accompanying <a href="https://github.com/KunkelAlexander/nonperiodicinterpolation-python"> Python code on GitHub </a>.
 
 
-## Bell functions
-The idea of mollifiers is to convolve the non-periodic function with a suitable smooth bell function in position space to smoothen the discontinuity. Compared to filters, mollifiers require knowledge of the location of the discontinuity which makes them inferior to filters in some applications. Just like for filters, the convolution leads to a loss of information which makes mollifiers inferior to methods that use more information about a given function to make it periodic.
+### Mollifiers
+Mollifiers involve convolving non-periodic functions with suitable smooth bell functions in position space to smooth out discontinuities. Unlike filters, mollifiers require knowledge of the discontinuity's location, making them less effective in certain applications. Similar to filters, convolution with a mollifier results in information loss, making them less effective than methods that utilize more information about the function to achieve periodicity.
 
-The filter we are going to is the bell function $$B(x)$$:
+
+The mollifier we are going to is the bell function $$B(x)$$:
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/lfb_bell.png" alt="">
-It is the identity function in the domain $$\[a, b\]$$ and smoothly decays to zero in the boundary regions $$\[a_1, a\]$$ and $$\[b, b_1\]$$. It decays to the value $$\frac{1}{\sqrt{2}}$$ at the points $$\bar{a}$$ and $$\bar{b}$$.
-One could simply multiply the bell function $$B(x)$$ with the input function $$f(x)$$ to obtain periodic function. However, as can be read in Boyd's paper, one can achieve higher accuracy by means of a folding operation that makes better use of the boundary zone.
+It is the identity function in the domain $$[a, b]$$ and smoothly decays to zero in the boundary regions $$[a_1, a]$$ and $$[b, b_1]$$. Moreover, it assumes the value $$\frac{1}{\sqrt{2}}$$ at the points $$\bar{a}$$ and $$\bar{b}$$.
+
+### Antisymmetric extension
+One could naively multiply the bell function $$B(x)$$ with the input function $$f(x)$$ to obtain a periodic function. However, as Boyd's paper suggests, higher accuracy can be achieved through a folding operation that optimally utilizes the boundary zone.
 
 $$F(x) = B(x)f(x) - B(2\hat{a} - x) f(2\hat{a} - x)  - B(2\hat{b} - x) f(2\hat{b} - x)$$
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/lfb_folding.png" alt="">
 
-$$F(x)$$ can be antisymmetrically extended to give a periodic function where the original unmodified function $$f(x)$$ can be seen in the domain shaded in light blue in the following plot.
-
+$$F(x)$$ can be antisymmetrically extended to produce a periodic function, where the original unmodified function $$f(x)$$ resides in the shaded domain shown below.
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/lfb_extension.png" alt="">
 
-Note that we discard the boundary regions $$\[a_1, a\]$$ and $$\[b, b_1\]$$ in this process. The larger they are, the higher the accuracy of the periodic extension.
+It is important to note that in this process, the boundary regions $$[a_1, a]$$ and $$[b, b_1]$$ are discarded. The larger these regions are, the higher the accuracy of the periodic extension.
 
-For a domain of size $$N=100$$ and additional ghost boundaries of size $$N_{gh} = 32$$ we obtain the following accuracies for the derivatives of $$f(x) = \exp(x)$$ in $$\[0, \pi\]$$.
+For a domain of size $$N=100$$ and additional ghost boundaries of size $$N_{gh} = 32$$ we obtain the following accuracies for the derivatives of $$f(x) = \exp(x)$$ in $$[0, \pi]$$.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/lfb_accuracy.png" alt="">
 
-The accuracy is alright, but far from what I imagine when sacrificing more then one third of the input data for obtaining a periodic extension. The advantage of mollifiers is that they do not require the solution of a linear system of equations and are therefore very fast to compute. They can be a good option for large domains where having a ghost boundary of a few dozen points is not a problem.
-
+### Accuracy
+While the accuracy is acceptable, it falls short of expectations when sacrificing more than one-third of the input data for obtaining a periodic extension. However, mollifiers offer the advantage of not requiring the solution of linear systems of equations, making them computationally efficient. They can be a viable option for large domains where having a ghost boundary of a few dozen points is feasible.
 The code to generate the above figures can be found below:
 
-{%- highlight python -%}import numpy as np
+{%- highlight python -%}
+
+import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 
@@ -173,6 +177,7 @@ plt.legend()
 plt.tight_layout()
 plt.savefig("figures/lfb_extension.png", bbox_inches='tight')
 plt.show()
+
 
 # Number of subplots
 num_subplots = 3
