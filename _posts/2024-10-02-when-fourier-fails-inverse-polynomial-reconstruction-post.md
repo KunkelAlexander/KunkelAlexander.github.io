@@ -62,4 +62,63 @@ plt.plot(x, f_rec(x), label = r"Reconstruction of $f(x)$", c = '#FE53BB')
 The result looks as follows:
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_failure.png" alt="">
 
-What went wrong?
+What went wrong? The reconstruction is clearly divergent. The problem is lies with the conditioning of $$W$$, as is confirmed by plotting its singular values:
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_svd.png" alt="">
+
+Its condition number in this case is $$\cond(W) = 10^16$$. One could go to smaller $$N$$, but we want high accuracy. So, we need to find a different solution. And Jung's paper has the solution: It can be shown that the expansion $$g$$ in the Chebyshev basis should decay exponential fast. Therefore, we can neglect the higher coefficient of $$g$$ and retain exponential accuracy. Effectively, this means that we project onto a polynomial subspace, just like in the Gegenbauer method. The projection Jung et al. propose is done via Gaussian elimination with truncation.
+
+
+{%- highlight python -%}# LU decomposition with pivot
+pivot, L, U = scipy.linalg.lu(W, permute_l=False)
+
+# forward substitution to solve for L x y = f_k
+y = np.zeros(f_k.size, dtype=complex)
+for m, b in enumerate((pivot.T @ f_k).flatten()):
+    y[m] = b
+    # skip for loop if m == 0
+    if m:
+        for n in range(m):
+            y[m] -= y[n] * L[m,n]
+    y[m] /= L[m, m]
+
+# truncation for IPR
+c = np.abs(y) < 1000 * np.finfo(float).eps
+y[c] = 0
+
+# backward substitution to solve for y = U x
+g = np.zeros(f_k.size, dtype=complex)
+lastidx = f_k.size - 1  # last index
+for midx in range(f_k.size):
+    m = f_k.size - 1 - midx  # backwards index
+    g[m] = y[m]
+    if midx:
+        for nidx in range(midx):
+            n = f_k.size - 1  - nidx
+            g[m] -= g[n] * U[m,n]
+    g[m] /= U[m, m]
+
+
+f_rec = np.poly1d([])
+for l, coeff in enumerate(g):
+    f_rec += coeff * scipy.special.chebyt(l)
+
+fig, axs = plt.subplots(figsize=(5 , 3), dpi=200)
+plt.style.use('dark_background')
+plt.plot(x, f, label = r"$f(x)$", c = '#08F7FE')
+plt.plot(x, f_rec(x), label = r"Reconstruction of $f(x)$", c = '#FE53BB')
+plt.xlabel(r"$x$")
+plt.ylabel(r"$f(x)$")
+plt.legend()
+plt.tight_layout()
+plt.savefig("figures/ipr_success.png", bbox_inches='tight')
+plt.show()
+{%- endhighlight -%}
+
+The result looks as follows:
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_success.png" alt="">
+The truncated reconstruction converges. The truncation threshold needs to be empirically determined and should be set high enough to ensure stability.
+
+### Accuracy
+The accuracy of the truncated IPR is very high and can reach machine precision. The following plots show that even an $$11$$th order derivative can be calculated within $$0.1$$% error. From my experience, the IPR has very good convergence properties for large enough $$N$$. However, for low-resolution data, the error of the reconstruction is unbounded which makes the IPR algorithm unsuitable for the interpolation of low-resolution data with high accuracy.
+
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_accuracy.png" alt="">
