@@ -35,11 +35,14 @@ $$F(x)$$ can be antisymmetrically extended to produce a periodic function, where
 
 It is important to note that in this process, the boundary regions $$[a_1, a]$$ and $$[b, b_1]$$ are discarded. The larger these regions are, the higher the accuracy of the periodic extension.
 
+### Accuracy
+
 For a domain of size $$N=100$$ and additional ghost boundaries of size $$N_{gh} = 32$$ we obtain the following accuracies for the derivatives of $$f(x) = \exp(x)$$ in $$[0, \pi]$$.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/lfb_accuracy.png" alt="">
 
-### Accuracy
 While the accuracy is acceptable, it falls short of expectations when sacrificing more than one-third of the input data for obtaining a periodic extension. However, mollifiers offer the advantage of not requiring the solution of linear systems of equations, making them computationally efficient. They can be a viable option for large domains where having a ghost boundary of a few dozen points is feasible.
+
+### Code
 The code to generate the above figures can be found below:
 
 {%- highlight python -%}

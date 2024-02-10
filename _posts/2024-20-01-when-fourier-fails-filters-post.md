@@ -45,6 +45,8 @@ When the spectrum is filtered with a constant function, the decay of the Fourier
 Filtering with a smoothly decaying filter function significantly reduces oscillations and increases the accuracy of the reconstruction.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/filter_2.png" alt="">
 
+
+### Code
 The following code produces the above figures.
 
 {%- highlight python -%}
