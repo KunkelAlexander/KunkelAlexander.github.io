@@ -54,7 +54,6 @@ import scipy
 import scipy.integrate
 from scipy.fft import fft, ifft
 import matplotlib.pyplot as plt
-plt.axis("off")
 plt.style.use('dark_background')
 
 def sigma0(eta):
@@ -95,28 +94,30 @@ for i, filter in enumerate(filters):
         k /= np.max(np.abs(k))
         return filter(np.abs(k))
 
-    fig, ax = plt.subplots(1, 3, figsize=(12, 3), dpi=160)
-
+    fig, ax = plt.subplots(3, 1, figsize=(5, 7), dpi=160)
     s          = sigma(x)
     fhat, fint = interpolate(f, Ni, s)
-
-
     k = np.fft.fftfreq(len(x))
-    ax[0].set_title(f"Filter {i + 1}")
-    ax[0].plot(s)  # Plot the filter
+
+    ax[0].plot(s, label=f"Filter {i + 1}")  # Plot the filter
     ax[0].set_ylim(0, 1.1)
-
-    ax[1].set_title(f"Filtered spectrum {i + 1}")
+    ax[0].legend()
     ax[1].set_yscale("log")
-    ax[1].plot(np.abs(fhat) * s)  # Plot the magnitude of the Fourier coefficients
-
-    ax[2].set_title(f"Error = {np.mean(np.abs(fint[8:-8] - func(xi)[8:-8])):3.3e}")
+    ax[1].set_ylim(1e-5, 1)
+    ax[1].plot(np.abs(fhat) * s, label=f"Filtered spectrum {i + 1}")  # Plot the magnitude of the Fourier coefficients
+    ax[1].legend()
     ax[2].plot(xi, func(xi), label="f(x) = x")  # Plot the error
-    ax[2].plot(xi, fint, label="Interpolation")  # Plot the error
+    ax[2].plot(xi, fint, label=f"Interpolation with error = {np.mean(np.abs(fint[8:-8] - func(xi)[8:-8])):3.3e}")  # Plot the error
     ax[2].legend()
 
-    plt.savefig(f"figures/filter_{i+1}.png")
+    for j in range(3):
+        ax[j].spines['top'].set_visible(False)
+        ax[j].spines['right'].set_visible(False)
+        ax[j].spines['bottom'].set_visible(False)
+        ax[j].get_xaxis().set_ticks([])
 
+    fig.subplots_adjust(hspace=0.1)
+    plt.savefig(f"figures/filter_{i+1}.png")
     plt.show()
 {%- endhighlight -%}
 
