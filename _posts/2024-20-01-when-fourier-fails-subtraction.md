@@ -379,7 +379,7 @@ It is worth noting that, in my experience, all spectral methods acting on non-pe
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_polynomial_log_accuracy.png" alt="">
 
 Studying the decay of the polynomial coefficients reveals that every pair of polynomials subtracted increases the order of convergence by $1$, not by $2$ as in the case of the antisymmetric extension.
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_polynomial_extension.png" alt="">
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_polynomial_decay.png" alt="">
 
 
 {%- highlight python -%}
