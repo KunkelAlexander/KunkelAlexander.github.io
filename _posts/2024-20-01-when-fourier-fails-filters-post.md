@@ -47,7 +47,6 @@ Filtering with a smoothly decaying filter function significantly reduces oscilla
 
 
 ### Code
-The following code produces the above figures.
 
 {%- highlight python -%}
 # import libraries

@@ -43,8 +43,6 @@ For a domain of size $$N=100$$ and additional ghost boundaries of size $$N_{gh} 
 While the accuracy is acceptable, it falls short of expectations when sacrificing more than one-third of the input data for obtaining a periodic extension. However, mollifiers offer the advantage of not requiring the solution of linear systems of equations, making them computationally efficient. They can be a viable option for large domains where having a ghost boundary of a few dozen points is feasible.
 
 ### Code
-The code to generate the above figures can be found below:
-
 {%- highlight python -%}
 
 import numpy as np
