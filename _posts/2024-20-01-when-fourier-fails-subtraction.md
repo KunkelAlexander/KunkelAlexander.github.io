@@ -24,10 +24,10 @@ In the following, I will implement two subtraction methods: trigonometric and po
 ## Trigonometric Subtraction
 The trigonometric method, described in Matthew Green's M.Sc. thesis <a href="https://core.ac.uk/download/215443759.pdf"> Spectral Solution with a Subtraction Method to Improve Accuracy</a>, estimates boundary derivatives using finite-difference stencils and subtracts an inhomogeneous linear combination of cosine functions, leaving a homogeneous remainder. This remainder can either be expanded using a sine transform or, less efficiently, antisymmetrically expanded into a periodic function and then manipulated using a Fourier transform.
 Schematically, the process looks as follows:
-- Given a grid: $$0, \Delta x, ..., L - \Delta x, L$
-- Estimate even derivatives $$f^{(0)}(x_0), f^{(0)}(x_1), f^{(2)}(x_0), f^{(2)}(x_1), $$... of $$f(x)$$ at $$x_0=0$$ and $$x_1 = L$
+- Given a grid: $$0, \Delta x, ..., L - \Delta x, L$$
+- Estimate even derivatives $$f^{(0)}(x_0), f^{(0)}(x_1), f^{(2)}(x_0), f^{(2)}(x_1), $$... of $$f(x)$$ at $$x_0=0$$ and $$x_1 = L$$
 - Set them to $$0$$ by subtracting suitable linear combinations of cosine functions evaluated on the discrete grid
-- Define antisymmetric extension as {$f(x_0), ..., f(x_1), -f(x_1 - \Delta x), ..., -f(x_0 + \Delta x)$}
+- Define antisymmetric extension as $$\{f(x_0), ..., f(x_1), -f(x_1 - \Delta x), ..., -f(x_0 + \Delta x)\}$$
 - Accurate Fourier transform of antisymmetric extension
 
 It is useful to construct an antisymmetric extension because the 0th order derivatives, i.e. the function values, are known already.
@@ -38,7 +38,7 @@ The following figure demonstrates the latter process using an exponential functi
 Computing derivatives by summing analytical derivatives of cosine functions with the appropriate coefficients and numerical derivatives of the Fourier transform, we see that while the first derivate can be computed very accurately, higher derivatives become less and less accurate.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_trigonometric_accuracy.png" alt="">
 
-Finally, the decay of the Fourier coefficients can be beautifully visualised. We can subtract a linear combination of two cosine functions such that the remainder satisfies Dirichlet boundary conditions. The antisymmetric extension $$f_{ext} \in C^0$$ in this case and its Fourier coefficients decay as $$\propto k^{-3}$. Every further pair of trigonometric functions subtracted increases the order of convergence by 2.
+Finally, the decay of the Fourier coefficients can be beautifully visualised. We can subtract a linear combination of two cosine functions such that the remainder satisfies Dirichlet boundary conditions. The antisymmetric extension $$f_{ext} \in C^0$$ in this case and its Fourier coefficients decay as $$\propto k^{-3}$$. Every further pair of trigonometric functions subtracted increases the order of convergence by 2.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_trigonometric_decay.png" alt="">
 
 The following code shows the computation of suitable linear combinations of cosine functions for the subtraction
@@ -377,7 +377,7 @@ A suitably chosen 9th-order subtraction polynomial ensures that the homogeneous 
 It is worth noting that, in my experience, all spectral methods acting on non-periodic data (including Chebyshev methods on Chebyshev grids) share one drawback: reconstruction errors at the domain boundaries close to the discontinuities are often orders of magnitude higher than in the domain center. This is also demonstrated in the following figure, where the logarithm of the reconstruction error is shown in blue, and the reconstructed function is in red.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_polynomial_log_accuracy.png" alt="">
 
-Studying the decay of the polynomial coefficients reveals that every pair of polynomials subtracted increases the order of convergence by $$1$, not by $$2$$ as in the case of the antisymmetric extension.
+Studying the decay of the polynomial coefficients reveals that every pair of polynomials subtracted increases the order of convergence by $$1$$, not by $$2$$ as in the case of the antisymmetric extension. Comparing the decay of coefficients between the two methods shows that the polynomial subtraction method decays to machine precision faster than the trigonometric subtraction method despite the same order of convergence. This is one of the reasons why I do not think one of the two methods is to be preferred over the other necessarily.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/subtraction_polynomial_decay.png" alt="">
 
 
