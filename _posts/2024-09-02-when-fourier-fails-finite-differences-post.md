@@ -17,7 +17,8 @@ This series of posts looks into different strategies for interpolating non-perio
 
 
 ## Arbitrary-order finite difference stencils
-Finite difference stencils work by discretising differential operators on a discrete grid. They are usually derived by suitable manipulation of the Taylor expansion of given function. On a uniform grid, we can easily derive arbitrarily high-order finite differences. For $$N = 3$$, we need to solve the following linear system
+Finite difference stencils work by discretising differential operators on a discrete grid. They are usually derived by suitable manipulation of the Taylor expansion of given function. On a uniform grid, we can easily derive arbitrarily high-order finite differences. For $$N = 3$$, we need to solve the following linear system:
+
 $$
 \begin{bmatrix}
 1 & 0 & 0 \\
@@ -37,7 +38,8 @@ f(x_2) - f(x_0) \\
 f(x_3) - f(x_0)
 \end{bmatrix}
 $$
-to obtain the first, second and third derivative of $$f$$ at $$x_0$$ with third-order accuracy. This linear system is derived by writing down a suitable Taylor expansion of $f$, solving for the desired derivatives and neglecting higher-order terms. Using this method, forward, backward, centered and irregular finite-difference stencils can be derived.
+
+The solution vector contains the first, second and third derivative of $$f$$ at $$x_0$$ with third-order accuracy. This linear system is derived by writing down a suitable Taylor expansion of $f$, solving for the desired derivatives and neglecting higher-order terms. Using this method, forward, backward, centered and irregular finite-difference stencils can be derived.
 
 However, in practice computing high-order derivatives using this method becomes increasingly inaccurate for higher orders as the introductory figure demonstrates.It shows the error of the derivative of $$f(x) = \exp(x)$$ at $$x_0 = 0$$ with the derivative approximated using a forward finite difference stencil. Darker shades of purple represent lower errors. For finite difference stencils up to roughly $$12^{th}$$ order, the errors for lower-order derivatives decrease. For finite difference stencils with order $$> 12$$, even the the estimation of low-order derivatives fails and it is impossible to accurately estimate derivatives with order $$> 12$$. Note that the upper right triangle is black since we can only estimate a derivative of order $$N$$ with a finite difference stencil of at least order $$N$$. The failure of higher-order finite difference stencils is linked to the Runge phenomenon. We cannot approximate $$f$$ using high-order polynomials on a uniform discrete grid which is exactly what the Taylor expansion attempts to do. This shows that periodic extensions of non-periodic functions relying on finite differences also suffer from the Runge phenomenon.
 
