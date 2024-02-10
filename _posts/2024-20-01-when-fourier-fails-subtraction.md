@@ -5,7 +5,7 @@ date:   2024-01-21
 description: Learn how to interpolate non-periodic, uniform data using subtraction methods!
 ---
 
-<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js" type="text/javascript"></script>
 
 <p class="intro"><span class="dropcap">I</span>n today's post, we study ways to accurately interpolate non-periodic, smooth data on a uniform grid. </p>
 
@@ -20,7 +20,10 @@ To utilize the Fourier transform with high accuracy, we must make our data perio
 
 Subtraction methods commonly involve subtracting either polynomials or trigonometric functions. Their accuracy hinges on the precise estimation of the data's derivatives at the boundaries. Since the Fourier transform demonstrates n+1-th order convergence if the n-th derivative is continuous, the Fourier coefficients decay as $\propto \mathcal{O}(\frac{1}{k^{n+1}})$. However, the maximum order of convergence is fundamentally limited by a variant of Runge's phenomenon, as it is impossible to estimate arbitrarily high-order derivatives using polynomial stencils. In addition, high-order subtraction methods may be relatively unstable when building PDE solvers. In terms of accuracy, PDE solver using subtraction methods cannot compete with DFTs on periodic grids because they become unstable for high subtraction orders in my experience based on wave and fluid equations.
 
-In the following, I will implement two subtraction methods: trigonometric and polynomial subtraction. The trigonometric method, described in Matthew Green's M.Sc. thesis <a href="https://core.ac.uk/download/215443759.pdf"> Spectral Solution with a Subtraction Method to Improve Accuracy</a>, estimates boundary derivatives using finite-difference stencils and subtracts an inhomogeneous linear combination of cosine functions, leaving a homogeneous remainder. This remainder can either be expanded using a sine transform or, less efficiently, antisymmetrically expanded into a periodic function and then manipulated using a Fourier transform.
+In the following, I will implement two subtraction methods: trigonometric and polynomial subtraction.
+
+## Trigonometric Subtraction
+The trigonometric method, described in Matthew Green's M.Sc. thesis <a href="https://core.ac.uk/download/215443759.pdf"> Spectral Solution with a Subtraction Method to Improve Accuracy</a>, estimates boundary derivatives using finite-difference stencils and subtracts an inhomogeneous linear combination of cosine functions, leaving a homogeneous remainder. This remainder can either be expanded using a sine transform or, less efficiently, antisymmetrically expanded into a periodic function and then manipulated using a Fourier transform.
 Schematically, the process looks as follows:
 - Given a grid: $0, \Delta x, ..., L - \Delta x, L$
 - Estimate even derivatives $f^{(0)}(x_0), f^{(0)}(x_1), f^{(2)}(x_0), f^{(2)}(x_1), $... of $f(x)$ at $x_0=0$ and $x_1 = L$
@@ -362,7 +365,7 @@ fig.savefig("figures/subtraction_trigonometric_accuracy.png")
 
 {%- endhighlight -%}
 
-## Polynomial subtraction
+## Polynomial Subtraction
 
 For the polynomial subtraction, I demonstrate a slightly different approach. Instead of constructing an antisymmetric extension, I simply subtract all derivatives so that the remainder becomes periodic. The remainder can then be expanded using a DFT. In principle, one might expect antisymmetric extensions to yield higher accuracy because they achieve more continuous derivatives with the same polynomial order. However, my numerical experiments indicate that this is not necessarily the case.
 
