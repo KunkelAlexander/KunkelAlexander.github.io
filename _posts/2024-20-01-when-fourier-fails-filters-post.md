@@ -31,7 +31,7 @@ Such alternative approaches include
 - Periodic SVD extensions
 - Gram-Fourier extensions
 
-In the following, we will look at filters.  You may find the accompanying <a href="https://github.com/KunkelAlexander/nonperiodicinterpolation-python"> Python code on GitHub </a>.
+In the following, we will look at filters.  You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>.
 
 
 ## Filters
