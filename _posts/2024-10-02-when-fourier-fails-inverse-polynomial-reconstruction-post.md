@@ -31,7 +31,7 @@ The Fourier coefficients $$\hat{f}_k$$ of a discrete Fourier series $$f_N(x) = \
 
 $$ \hat{f}_k \equiv (f(x), \exp(i k \pi x))_F = \frac{1}{2} \int_{-1}^1 f(x) \exp(-i\pi x k) \mathrm{d}x $$
 
-In this expression, the Fourier transform of $$f(x)$$ can be understood as $$\hat{f}_k$$ being the projection of $$f(x)$$ onto the $$k$$-th basis element of the Fourier basis. Let us introduce a different basis set $$\{\phi_l(x) \mathrm{with l} = 0, ..., m\}$$ and choose $$\phi_l$$ to be the Chebyshev polynomials. We can compute the change-of-basis matrix $$W$$ from the Chebyshev basis to the Fourier basis using the Fourier transform as
+In this expression, the Fourier transform of $$f(x)$$ can be understood as $$\hat{f}_k$$ being the projection of $$f(x)$$ onto the $$k$$-th basis element of the Fourier basis. Let us introduce a different basis set $$\{\phi_l(x), l = 0, ..., m\}$$ and choose $$\phi_l$$ to be the Chebyshev polynomials. We can compute the change-of-basis matrix $$W$$ from the Chebyshev basis to the Fourier basis using the Fourier transform as
 
 $$W_{kl} = (\phi_l(x), \exp(i k \pi x))_F = \frac{1}{2} \int_{-1}^1 \phi_l(x) \exp(-i\pi x k) \mathrm{d}x $$
 
@@ -60,10 +60,9 @@ plt.plot(x, f_rec(x), label = r"Reconstruction of $f(x)$", c = '#FE53BB')
 
 The result looks as follows:
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_failure.png" alt="">
-What went wrong? The reconstruction is clearly divergent. The problem lies in the conditioning of $$W$$, as is confirmed by plotting its singular values:
+What went wrong? The reconstruction is clearly divergent and the problem lies in the conditioning of $$W$$, as is confirmed by plotting its singular values:
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_svd.png" alt="">
 Its condition number in this case is $$\mathrm{cond}(W) = 10^{16}$$. Fortunately for us, Jung's paper proposes a solution: A projection to  a polynomial subspace performed via Gaussian elimination with a truncation:
-
 
 {%- highlight python -%}# LU decomposition with pivot
 pivot, L, U = scipy.linalg.lu(W, permute_l=False)
@@ -111,11 +110,10 @@ plt.savefig("figures/ipr_success.png", bbox_inches='tight')
 plt.show()
 {%- endhighlight -%}
 
-The result looks as follows:
+The truncated reconstruction beautifully converges. The only downside of this method is that the truncation threshold needs to be empirically determined and should be set high enough to ensure stability.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_success.png" alt="">
-The truncated reconstruction converges. The truncation threshold needs to be empirically determined and should be set high enough to ensure stability.
 
 ### Accuracy
-The accuracy of the truncated IPR is very high and can reach machine precision. The first plot in the series demonstrates that despite a high precision, the IPR shares the feature that I have observed in all spectral reconstructions of non-periodic data: The errors close to the discontinuity at the domain boundaries is orders of magnitude higher than in the domain center. Whatever the approach, having a ghost boundary that can be discarded helps to achieve high accuracy. The second plot shows that even an $$11$$th order derivative can be calculated within $$0.1$$% error. From my experience, the IPR has very good convergence properties for large enough $$N$$. However, for low-resolution data, the error of the reconstruction is unbounded which makes the IPR algorithm unsuitable for the interpolation of low-resolution data with high accuracy.
+The accuracy of the truncated IPR is very high and can reach machine precision. The first plot in the series demonstrates that despite a high precision, the IPR shares a feature that I have observed in all spectral reconstructions of non-periodic data: The errors close to the discontinuity at the domain boundaries is orders of magnitude higher than in the domain center. Whatever the approach, having a ghost boundary that can be discarded helps to achieve high accuracy. The second plot shows that even an $$11$$th order derivative can be calculated within $$0.1$$% error. From my experience, the IPR has very good convergence properties for large enough $$N$$. However, for low-resolution data, the error of the reconstruction is unbounded which makes the IPR algorithm unsuitable for the interpolation of low-resolution data with high accuracy.
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_accuracy.png" alt="">
