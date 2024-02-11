@@ -52,7 +52,6 @@ f_rec = np.poly1d([])
 for l, coeff in enumerate(g):
     f_rec += coeff * scipy.special.chebyt(l)
 
-
 fig, axs = plt.subplots(figsize=(5 , 3), dpi=200)
 plt.style.use('dark_background')
 plt.plot(x, f, label = r"$f(x)$", c = '#08F7FE')
@@ -61,11 +60,9 @@ plt.plot(x, f_rec(x), label = r"Reconstruction of $f(x)$", c = '#FE53BB')
 
 The result looks as follows:
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_failure.png" alt="">
-
-What went wrong? The reconstruction is clearly divergent. The problem is lies with the conditioning of $$W$$, as is confirmed by plotting its singular values:
+What went wrong? The reconstruction is clearly divergent. The problem lies in the conditioning of $$W$$, as is confirmed by plotting its singular values:
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_svd.png" alt="">
-
-Its condition number in this case is $$\cond(W) = 10^16$$. One could go to smaller $$N$$, but we want high accuracy. So, we need to find a different solution. And Jung's paper has the solution: It can be shown that the expansion $$g$$ in the Chebyshev basis should decay exponential fast. Therefore, we can neglect the higher coefficient of $$g$$ and retain exponential accuracy. Effectively, this means that we project onto a polynomial subspace, just like in the Gegenbauer method. The projection Jung et al. propose is done via Gaussian elimination with truncation.
+Its condition number in this case is $$\cond(W) = 10^16$$. Fortunately for us, Jung's paper proposes a solution: A projection to  a polynomial subspace performed via Gaussian elimination with a truncation:
 
 
 {%- highlight python -%}# LU decomposition with pivot
