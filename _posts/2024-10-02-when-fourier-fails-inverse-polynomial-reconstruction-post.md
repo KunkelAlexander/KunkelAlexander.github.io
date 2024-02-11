@@ -31,7 +31,7 @@ The Fourier coefficients $$\hat{f}_k$$ of a discrete Fourier series $$f_N(x) = \
 
 $$ \hat{f}_k \equiv (f(x), \exp(i k \pi x))_F = \frac{1}{2} \int_{-1}^1 f(x) \exp(-i\pi x k) \mathrm{d}x $$
 
-In this expression, the Fourier transform of $$f(x)$$ can be understood as $$\hat{f}_k$$ being the projection of $$f(x)$$ onto the $$k$$-th basis element of the Fourier basis. Let us introduce a different basis set $$\{\phi_l(x)|l = 0, ..., m\}$$ and choose $$\phi_l$$ to be the Chebyshev polynomials. We can compute the change-of-basis matrix $$\mathb{W}$$ from the Chebyshev basis to the Fourier basis using the Fourier transform as
+In this expression, the Fourier transform of $$f(x)$$ can be understood as $$\hat{f}_k$$ being the projection of $$f(x)$$ onto the $$k$$-th basis element of the Fourier basis. Let us introduce a different basis set $$\{\phi_l(x) with l = 0, ..., m\}$$ and choose $$\phi_l$$ to be the Chebyshev polynomials. We can compute the change-of-basis matrix $$\mathb{W}$$ from the Chebyshev basis to the Fourier basis using the Fourier transform as
 
 $$W_{kl} = (\phi_l(x), \exp(i k \pi x))_F = \frac{1}{2} \int_{-1}^1 \phi_l(x) \exp(-i\pi x k) \mathrm{d}x $$
 
