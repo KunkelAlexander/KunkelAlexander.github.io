@@ -18,11 +18,8 @@ SVD extensions are particularly simple and beautiful: Instead of aiming to find 
 
 ## Fourier Physical Interval Collocation—Spectral Coefficients as the Unknowns (FPIC-SU)
 Let $$\hat{f}(x)$$, defined in $$[0, \Theta]$$ be the periodic extension of $$f(x)$$, defined in $$[0, \chi]$$ where $$\Theta > \chi$$.
-$$\hat{f}(x)$$ allows for an accurate Fourier expansion as $$\hat{f}(x) = \sum_k a_k e^{\frac{2 \pi i}{\Theta} k x}$$. The coefficients $a_k$ of the Fourier series can be obtained by solving a linear optimisation problem:
+$$\hat{f}(x)$$ allows for an accurate Fourier expansion as $$\hat{f}(x) = \sum_k a_k e^{\frac{2 \pi i}{\Theta} k x}$$. The crucial idea of Fourier extensions of the third kind is that the coefficients $$a_k$$ of the Fourier series can be obtained by solving a linear optimisation problem:
 
 $$\min_{a_k \forall k \in t(m)} \sum^{n-1}_{j=0} \left| \sum_{k\in t(m)} a_k e^{\frac{2 \pi i}{b} k x_j} - f(x_j)\right|^2 = \min_{\hat{x}} \sum^{n-1}_{j=0} \left|A\hat{x} - b\right|^2$$
 
-The wave vectors are $$k$$ are chosen from a suitable set $$t(m)$$ and the points $$x_j$$ are collocation points in the physical domain $$[0, \chi]$$. By minimising the above expression, we ensure that the mismatch between $$f(x)$$ and its extension $$\hat{f}(x)$$ in the physical domain becomes minimal.
-
-
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_accuracy.png" alt="">
+The wave vectors are $$k$$ are chosen from a suitable set $$t(m)$$ and the points $$x_j$$ are collocation points in the physical domain $$[0, \chi]$$. By solving the optimisation problem, we ensure that the mismatch between $$f(x)$$ and its extension $$\hat{f}(x)$$ in the physical domain is small.
