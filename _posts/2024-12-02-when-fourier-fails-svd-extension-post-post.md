@@ -1,20 +1,30 @@
 ---
 layout: post
-title:  "When Fourier fails: Inverse Polynomial Reconstruction"
-date:   2024-02-10
-description: Learn more how to change to an exponentially accurate function basis.
+title:  "When Fourier fails: SVDs and Fourier extensions of the third kind"
+date:   2024-02-11
+description: Learn about the magic of high-precision extensions using SVDs.
 ---
 
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
-<p class="intro"><span class="dropcap">I</span>n today's post, we study the truncated Inverse Polynomial Reconstruction method. </p>
+<p class="intro"><span class="dropcap">I</span>n today's post, we study the Fourier extensions of the third kind, my personal favourite. </p>
 
 
 ## Intro
-This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In this post, we delve into a very interesting topic: Inverse Polynomial Reconstruction (IPR). The method presented here is described in Jung's and Shizgal's paper <a href="https://www.sciencedirect.com/science/article/abs/pii/S0021999107000332"> On the numerical convergence with the inverse polynomial reconstruction method for the resolution of the Gibbs phenomenon </a>. The logic of this method is as follows: We compute the Fourier extension of a non-periodic function and then change to a basis with better convergence properties. The result is a highly accurate reconstruction of the original function in a polynomial basis on a uniform grid. This result is surprising since direct polynomial expansion leads to the Runge instability. The idea to restore convergence of the Fourier series in a different basis has been pioneered by <a href="https://www.sciencedirect.com/science/article/pii/0377042792902605"> Gottlieb et al. using Gegenbauer polynomials</a>. However, there is an important difference between the Gegenbauer and IPR methods. While the Gegenbauer method achieve stability by projection of the Fourier basis onto a polynomial basis spanning a smaller subspace, the IPR method computes an invertible change-of-base matrix between arbitrary functional bases. Convergence is independent of the polynomial basis used. Stability is remedied by the truncation suggested by Jung et al. which is effectively the truncation the Gegenbauer method started with. I only present IPR theory since it supersedes Gegenbauer methods according my understanding. You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>. Below you can catch a glimpse of the change-of-basis matrix we are going to derive in the following.
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/ipr_W.png" alt="">
+This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In this post, we delve into Fourier extensions using truncated singular value decompositions. The method presented here is known as Fourier extension of the third kind as described in Boyd's insightful paper <a href="https://www.sciencedirect.com/science/article/abs/pii/S0021999102970233"> A Comparison of Numerical Algorithms for Fourier Extension of the First, Second, and Third Kinds </a>.
+SVD extensions are particularly simple and beautiful: Instead of aiming to find a periodic extension and then Fourier transform, one instead solves a linear system whose solutions are the Fourier coeffients. You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>. Can you guess the definition of the linear operator from looking at its matrix representation?
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_W.png" alt="">
 
-## Change-of-basis matrix
+## Fourier Physical Interval Collocation—Spectral Coefficients as the Unknowns (FPIC-SU)
+The search for a suitable Fourier extension can be expressed as a minimisation problem:
+$$\min_{a_k \forall k \in t(m)} \sum^{n-1}_{j=0} \left| \sum_{k\in t(m)} a_k e^{\frac{2 \pi i}{b} k x_j} - f(x_j)\right|^2 = \min_{\hat{x}} \sum^{n-1}_{j=0} \left|A\hat{x} - b\right|^2$$
+
+
+Let $$f(x)$$ be a function that is symmetrix w.r.t. $$x=0$$ and defined on the positive interval $$[0, \chi]$$. This assumption can be satisfied for an arbitrary function $$g(x)$$ by splitting it into its symmetric and antisymmetric parts as $$S(x) \equiv g(x)/2 + g(-x)/2$$ and $$A(x) \equiv g(x)/2 - g(-x)/2$$. Let $$\hat{f}(x)$$ be the desired extension of $$f(x)$$ into the interval $$[0, \theta]$$ with $$\theta > \chi$$. Since $$\hat{f}(x)$$ is also symmetric w.r.t. $$x=0$$, it allows for an expansion in terms of cosine functions.
+\item Optimise linear, under-determined least squares problem via SVD $A = U \Sigma V^T$
+\item Drawback: Cost for SVD of $n\times m$ matrix $\mathcal{O}(\min(m, n)^2 \cdot \max(m, n))$
+\end{itemize}
+
 Let us study the Fourier transform of $$f(x) = \exp(x)$$ on $$[-1, 1]$$.
 
 {%- highlight python -%}
