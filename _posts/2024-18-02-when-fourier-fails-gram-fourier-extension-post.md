@@ -29,19 +29,21 @@ In order to expand the interpolant in terms of these polynomials, we use the Gra
 ## SVD Extensions
 For an introduction to SVD extensions, please see the [previous post][svd-post] in the series. In the following, we compute suitable SVD extensions of the orthonormal basis set derived in the previous section. What are the free parameters of the Gram-Fourier extension?
 
-Firstly, we choose the size of the boundary domain $$n_{\Delta}$$. It determines the maximum polynomial order that can live on the boundary and therefore the accuracy of the scheme. Secondly, we choose the maximum polynomial order $$m$$ for the boundary. Lyon's thesis suggests to choose $$m < n_{\Delta}$$ for stability, but personally, I find $$m = n_{\Delta} = 10$$ to work well in most cases. Thirdly, we choose the number of collocation points $$\Gamma$$ and the number of points in the extension domain $$n_D$$. We have already learnt that $$\Gamma > n_D$$, i.e. overcollocation, improves the quality of SVD extensions. Lyon suggests $$\Gamma = 150$$ and $$n_D$$ smaller. I have experimented with $$10 < n_D < 128$$ and find values $$n_D > 20$$ to work well. Since we work in arbitrary precision, we do not need to truncate the singular values of the SVD and also do not require iterative refinement. If the calculation is not accurate enough, one can simply increase the number of significant digits. Furthermore, we can directly solve the complex optimisation problem without a split into symmetric and antisymmetric part. This simplifies the code. At the same time, there is an additional complication because we compute two independent extensions for the left and right domain boundary: How to stitch them together? Lyon proposes to compute an even and an odd extensions respectively using only a number of $$g$$ even and odd wave vectors with $$g=63$$. By taking linear combinations of the two, one obtains extensions that smoothly decay to zero. These extensions can be stitched together to obtain a global periodic extension. Note that many of the above parameters are more or less arbitrary. Personally, I can confirm that the parameter choices Lyon's thesis proposes work well, but depending on your application you may choose different parameters.
+Firstly, we choose the size of the boundary domain $$n_{\Delta}$$. It determines the maximum polynomial order that can live on the boundary and therefore the accuracy of the scheme. Secondly, we choose the maximum polynomial order $$m$$ for the boundary. Lyon's thesis suggests to choose $$m < n_{\Delta}$$ for stability, but personally, I find $$m = n_{\Delta} = 10$$ to work well in most cases. Thirdly, we choose the number of collocation points $$\Lambda$$ and the number of points in the extension domain $$n_D$$. We have already learnt that $$\Lambda > n_D$$, i.e. overcollocation, improves the quality of SVD extensions. Lyon suggests $$\Lambda = 150$$ and $$n_D$$ smaller. I have experimented with $$10 < n_D < 128$$ and find values $$n_D > 20$$ to work well. Since we work in arbitrary precision, we do not need to truncate the singular values of the SVD and also do not require iterative refinement. If the calculation is not accurate enough, one can simply increase the number of significant digits. Furthermore, we can directly solve the complex optimisation problem without a split into symmetric and antisymmetric part. This simplifies the code. At the same time, there is an additional complication because we compute two independent extensions for the left and right domain boundary: How to stitch them together? Lyon proposes to compute an even and an odd extensions respectively using only a number of $$g$$ even and odd wave vectors with $$g=63$$. By taking linear combinations of the two, one obtains extensions that smoothly decay to zero. These extensions can be stitched together to obtain a global periodic extension. Note that many of the above parameters are more or less arbitrary. Personally, I can confirm that the parameter choices Lyon's thesis proposes work well, but depending on your application you may choose different parameters.
 
-The following plot shows the even and odd extensions $$f_{even}$$ and $$f_{odd}$$ (blue graphs on the left and right) alongside the Gram polynomials (pink) of order $$0$$ to $$4$$ (top to bottom). The white, vertical, dashed line at $$x = \Delta$$ denotes the symmetrix axis of the even and odd extensions: $$f_{even}(x) = f_{even}(x+\Delta)$$ and $$f_{odd}(x) = -f_{odd}(x + Delta)$$.
+The following plot shows the even and odd extensions $$f_{even}$$ and $$f_{odd}$$ (blue graphs on the left and right) alongside the Gram polynomials (pink) of order $$0$$ to $$4$$ (top to bottom). The white, vertical, dashed line at $$x = \Delta$$ denotes the symmetrix axis of the even and odd extensions: $$f_{even}(x) = f_{even}(x+\Delta)$$ and $$f_{odd}(x) = -f_{odd}(x + \Delta)$$.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_even_and_odd_extensions.png" alt="">
 
 The SVD extensions so obtained describe the Gram polynomials in the physical domain very well. One can reliably achieve a maximum approximation error below any desired value (i.e. $$100$$ significant digits) on the entire physical domain.
 
-## An example
-Finally, let us take a look at the function $$f(x) = \exp(x)$$ on $$[0, \pi]$$ and compute its Gram-Fourier extension for $$N=32$$, $$m=n_{\Delta} = 5$$, $$n_D = 26$$, $$\Gamma = 150$$ and $$g = 63$$. We project the function $$f$$ in the left and right boundary domains onto polynomials of orders $$0$$ to $$4$$ to obtain $$a_{left}$$ and $$a_{right}$$. In the second step, we use these coefficients to compute linear combinations of the even and odd extensions that smoothly decay to zero.
+## Gram-Fourier extension
+Finally, let us take a look at the function $$f(x) = \exp(x)$$ on $$[0, \pi]$$ and compute its Gram-Fourier extension for $$N=32$$, $$m=n_{\Delta} = 5$$, $$n_D = 26$$, $$\Lambda = 150$$ and $$g = 63$$. We project the function $$f$$ in the left and right boundary domains onto polynomials of orders $$0$$ to $$4$$ to obtain $$a_{left}$$ and $$a_{right}$$. In the second step, we use these coefficients to compute linear combinations of the even and odd extensions that smoothly decay to zero.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_zero_extension.png" alt="">
 
 Ignoring the parts where the extension is zero, one obtains the following plot:
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_extension.png" alt="">
+
+This extension only requires two matrix multiplications by $$m \times m$$ matrices to obtain the coefficients $$a_{left}$$ and $$a_{right}$$ as well as a linear combination of the precomputed extensions.
 
 
 {%- highlight python -%}
@@ -106,6 +108,10 @@ plt.savefig("figures/gramfe_extension.png", bbox_inches='tight')
 plt.show()
 {%- endhighlight -%}
 
+## Accuracy
+
+## Conclusion
+This concludes the series of posts on non-periodic interpolation. Out of all the methods presented, the Gram-Fourier extension is the winner for me. It is fast, accurate and stable. Once the extension tables are computed, it allows for an easy and fast implementation using existing matrix multplication and FFT libraries on CPUs and GPUs.
 
 ## Code
 The code accompanying this post is lengthy. I recommend you take a look at the Jupyter notebook in the Github repository.
@@ -266,18 +272,18 @@ def get_wave_vectors(g, mode = M_ALL_K):
 
     return k * mp.mpf(1)
 
-def get_grid(Delta, Gamma):
-    dxeval = Delta/(Gamma - 1)
-    xeval  = mp.matrix(1, Gamma)
-    for i in range(Gamma):
+def get_grid(Delta, Lambda):
+    dxeval = Delta/(Lambda - 1)
+    xeval  = mp.matrix(1, Lambda)
+    for i in range(Lambda):
         xeval[0, i] = 1 - Delta + i * dxeval
     return xeval
 
-def get_svd_extension_matrix(g, Gamma, Delta, d, mode):
+def get_svd_extension_matrix(g, Lambda, Delta, d, mode):
     ks = get_wave_vectors(g, mode)
-    x  = get_grid(Delta, Gamma)
-    M  = mp.matrix(Gamma, len(ks))
-    for i in range(Gamma):
+    x  = get_grid(Delta, Lambda)
+    M  = mp.matrix(Lambda, len(ks))
+    for i in range(Lambda):
         for j, k in enumerate(ks):
             M[i, j] = mp.exp(1j * k * np.pi / (d + Delta) * x[0, i])
     return M
@@ -300,7 +306,7 @@ def invert_svd_extension_matrix(M, cutoff):
     f2  = Vht * f1
     return  f2
 
-def reconstruct_svd_extension(x, a, g, Gamma, Delta, d, mode):
+def reconstruct_svd_extension(x, a, g, Lambda, Delta, d, mode):
     ks = get_wave_vectors(g, mode)
     rec = mp.matrix(1, len(x))
     for j, coeff in enumerate(a):
@@ -320,11 +326,11 @@ def iterative_refinement(M, Minv, f, threshold = 100, maxiter = 1000):
         counter += 1
     return a
 
-def compute_svd_extension(x, g, Gamma, Delta, d, mode, f, threshold = 10, maxiter = 10):
-    M     = get_svd_extension_matrix(g, Gamma, Delta, d, mode)
+def compute_svd_extension(x, g, Lambda, Delta, d, mode, f, threshold = 10, maxiter = 10):
+    M     = get_svd_extension_matrix(g, Lambda, Delta, d, mode)
     Minv  = invert_svd_extension_matrix(M, 0)
     a     = iterative_refinement(M, Minv, f)
-    frec  = reconstruct_svd_extension(x, a, g, Gamma, Delta, d, mode)
+    frec  = reconstruct_svd_extension(x, a, g, Lambda, Delta, d, mode)
     return frec
 
 #### DEFAULT PARAMS
@@ -332,13 +338,13 @@ def compute_svd_extension(x, g, Gamma, Delta, d, mode, f, threshold = 10, maxite
 # n      = 10
 # nDelta = 10
 # nd     = 27
-# Gamma  = 150
+# Lambda = 150
 # g      = 63
 ####################
 m      = 5
 nDelta = 5
 nd     = 26
-Gamma  = 150
+Lambda  = 150
 g      = 63
 
 h      = 1/(nd - 1)
@@ -355,9 +361,9 @@ rightBoundary = x[-nDelta:      ]
 lgs = GramSchmidt(leftBoundary, m)
 rgs = GramSchmidt(rightBoundary, m)
 
-dxeval = Delta/(Gamma - 1)
-xeval  = mp.matrix(1, Gamma)
-for i in range(Gamma):
+dxeval = Delta/(Lambda - 1)
+xeval  = mp.matrix(1, Lambda)
+for i in range(Lambda):
     xeval[0, i] = 1 - Delta + i * dxeval
 
 fig, axs = plt.subplots(figsize=(5, 3), dpi=200)
@@ -372,7 +378,7 @@ plt.show()
 
 xext  = mp.linspace(1 - Delta, 1 + Delta + 2*d, 1000)
 mode = M_EVEN_K
-M     = get_svd_extension_matrix(g, Gamma, Delta, d, mode)
+M     = get_svd_extension_matrix(g, Lambda, Delta, d, mode)
 Minv  = invert_svd_extension_matrix(M, 0)
 evencoeffs = []
 evenbasis = []
@@ -380,14 +386,14 @@ evenfrecs = []
 for i in range(m):
     yeval = rgs.evaluate_basis(xeval, i)
     a     = iterative_refinement(M, Minv, yeval)
-    frec  = reconstruct_svd_extension(xext, a, g, Gamma, Delta, d, mode)
+    frec  = reconstruct_svd_extension(xext, a, g, Lambda, Delta, d, mode)
     evencoeffs.append(a)
     evenbasis.append(yeval)
     evenfrecs.append(frec)
 
 
 mode = M_ODD_K
-M     = get_svd_extension_matrix(g, Gamma, Delta, d, mode)
+M     = get_svd_extension_matrix(g, Lambda, Delta, d, mode)
 Minv  = invert_svd_extension_matrix(M, 0)
 oddcoeffs = []
 oddbasis = []
@@ -395,7 +401,7 @@ oddfrecs = []
 for i in range(m):
     yeval = rgs.evaluate_basis(xeval, i)
     a     = iterative_refinement(M, Minv, yeval)
-    frec  = reconstruct_svd_extension(xext, a, g, Gamma, Delta, d, mode)
+    frec  = reconstruct_svd_extension(xext, a, g, Lambda, Delta, d, mode)
     oddcoeffs.append(a)
     oddbasis.append(yeval)
     oddfrecs.append(frec)
@@ -411,11 +417,11 @@ F = mp.matrix(2 * r, Next)
 mode = M_EVEN_K
 
 for i in range(r):
-    F[i, :] = reconstruct_svd_extension(xstore, evencoeffs[i], g, Gamma, Delta, d, mode)
+    F[i, :] = reconstruct_svd_extension(xstore, evencoeffs[i], g, Lambda, Delta, d, mode)
 
 mode = M_ODD_K
 for i in range(r):
-    F[i+m, :] = reconstruct_svd_extension(xstore, oddcoeffs[i], g, Gamma, Delta, d, mode)
+    F[i+m, :] = reconstruct_svd_extension(xstore, oddcoeffs[i], g, Lambda, Delta, d, mode)
 
 Pr = mp.matrix(m, nDelta)
 Pl = mp.matrix(m, nDelta)
@@ -429,9 +435,9 @@ F_even = F_real[:m, :]
 F_odd  = F_real[m:, :]
 
 F_even_numpy = np.array(F_even, dtype=float).reshape(r, Next)
-F_even_numpy.tofile(f"F_even_nD={nDelta}_nd={nd}_g={g}_Gamma={Gamma}.bin")
+F_even_numpy.tofile(f"F_even_nD={nDelta}_nd={nd}_g={g}_Lambda={Lambda}.bin")
 F_odd_numpy  = np.array(F_odd, dtype=float).reshape(r, Next)
-F_odd_numpy.tofile(f"F_odd_nD={nDelta}_nd={nd}_g={g}_Gamma={Gamma}.bin")
+F_odd_numpy.tofile(f"F_odd_nD={nDelta}_nd={nd}_g={g}_Lambda={Lambda}.bin")
 Pl_numpy = np.array(Pl, dtype=float).reshape(r, nDelta)
 Pl_numpy.tofile(f"P_left_nD={nDelta}.bin")
 Pr_numpy = np.array(Pr, dtype=float).reshape(r, nDelta)
