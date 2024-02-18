@@ -11,59 +11,163 @@ description: One extension to rule them all. How to efficiently reuse accurate S
 
 
 ## Intro
-This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In this post, we combine Fourier extensions of the third kind with polynomial expansions. The method presented here is known as Fourier extension of the third kind as described in Boyd's insightful paper <a href="https://www.sciencedirect.com/science/article/abs/pii/S0021999102970233"> A Comparison of Numerical Algorithms for Fourier Extension of the First, Second, and Third Kinds </a>.
-SVD extensions are particularly simple and beautiful: Instead of aiming to find a periodic extension and then Fourier transform, one instead solves a linear system whose solutions are the Fourier coeffients. You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>. Can you guess the definition of the linear operator from looking at its matrix representation?
+This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In this post, we study Gram-Fourier extensions. This method was first described in Lyon's PhD thesis <a href="https://thesis.library.caltech.edu/2992/1/lyon_thesis_A100Final.pdf"> High-order unconditionally-stable FC-AD PDE solvers for general domains </a>.
+This method combines the accuracy of SVD extensions with the computational advantages of polynomial expansions. You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>.
 
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_W.png" alt="">
+## The merits of Gram-Fourier extensions
+In the [previous post][svd-post], we looked at SVD extensions: Periodic extensions obtained through solving a least-squares optimisation problem. They can be highly accurate, but are computationally expensive and require many collocation points for good results. The Gram-Fourier extension method remedies these drawbacks. Instead of computing SVD extensions of an interpolant at runtime, one precomputes SVD extensions of a set of polynomial basis functions, so-called Gram polynomial. The interpolant is expanded in terms of this polynomial basis set at the domain boundaries. But instead of summing the original polynomials, one then sums the precomputed periodic extensions of the polynomials and obtains a periodic function. In other words, one precomputes a change-of-basis from a polynomial basis to a periodic basis.
+This has several advantages: Firstly, the SVD extension of an analytically known function can be arbitrarily accurate because it can use arbitrarily many collocation points and arbitrarily high precision. Secondly, the polynomial expansion is only carried out at the interpolant's boundaries and therefore has a constant computational cost. Since the change-of-basis is precomputed, the periodic extension operation has constant computational cost vs $$\mathcal{O}(N^3)$$ for a standard SVD extension. The fact that the interpolant is only expanded at the boundaries means that the extension is oblivious to what the interpolant looks like away from the domain boundary. This limits the accuracy of Gram-Fourier extensions since the extension cannot be arbitrarily smooth at the domain boundary. If one uses $$N_{boundary}$$ points to compute the extension, the extension can at most be smooth up to order $$N_{boundary}-1$$. Imagine a polynomial of order $$4$$, for instance. Its $$5^{th}$$ derivative is inevitably zero, regardless of the true value of the $$5^{th}$$ derivative of the interpolant at the boundary. Accordingly, the Fourier coefficients of a Gram-Fourier extension can at best decay like $$\mathcal{O}(k^{-N_{boundary} - 1})$$.
 
-## Fourier Physical Interval Collocation—Spectral Coefficients as the Unknowns (FPIC-SU)
-Let $$\hat{f}(x)$$, defined in $$[0, \Theta]$$ be the periodic extension of $$f(x)$$, defined in $$[0, \chi]$$ where $$\Theta > \chi$$.
-$$\hat{f}(x)$$ allows for an accurate Fourier expansion as $$\hat{f}(x) = \sum_k a_k e^{\frac{2 \pi i}{\Theta} k x}$$. The crucial idea of Fourier extensions of the third kind is that the coefficients $$a_k$$ of the Fourier series can be obtained by solving a linear optimisation problem:
-
-$$\min_{a_k \forall k} \sum^{N-1}_{j=0} \left| \sum_{k} a_k e^{\frac{2 \pi i}{b} k x_j} - f(x_j)\right|^2 = \min_{\hat{a}} \sum^{n-1}_{j=0} \left|M\hat{a} - f\right|^2$$
-
-The points $$x_j$$ are collocation points in the physical domain $$[0, \chi]$$. By solving the optimisation problem, we ensure that the mismatch between $$f(x)$$ and its extension $$\hat{f}(x)$$ in the physical domain is small. Does that mean that we can just invert $$M$$ to solve the optimisation problem? That would be the case if $$M$$ was invertible. But for a given function $$f$$, one can imagine many periodic extensions that follow $$f$$ in the physical domain and take different values in the extended domain. Clearly, the system is underdetermined and admits infinitely many solutions. In general, $$M$$ is non-square. While $$M$$ may be square-shaped if the number of collocation points $$N_{coll}$$ matches the number of points of Fourier coefficients $$N$$, the system is always ill-conditioned because it is close to being uninvertible. Fortunately, one can still solve the optimisation problem by computing the singular value decomposition of $$M$$ and truncating small singular values before inverting $$M$$.
-
-## Collocation matrix
-According to my experience, solving the above complex expressions directly leads to poor results. Instead, one should compute separate extensions for the real and imaginary parts of a complex input function. Moreover, Boyd suggests to split a general real input function $$g(x)$$ into its symmetric and antisymmetric parts $$S(x) = g(x)/2 + g(-x)/2$$ and $$A(x) = A(x)/2 - A(-x)/2$$. The optimisation is then carried out separately for $$S$$ and $$A$$. The symmetric part $$S(x) \equiv f(x)$$ allows for a periodic extension in terms of a cosine series whereas the antisymmetric part requires a sine series. In the following, we focus on the symmetric part, but the antisymmetric part follows analogously.
-
-The Fourier coefficients of the cosine interpolation are the solution of the matrix problem $$M\hat{a} = f$$, where $$ M_{ij} = \cos\left([j-1] \frac{\pi}{\Theta} x_i\right)$$ with $$i = 1, 2, ..., N_{coll}$$, $$j = 1, 2, ..., N$$ and $$f_i = f(x_i)$$ evaluated at $$i = 1, 2, ..., N_{coll}$$. The collocation points are uniformly distributed over the positive half of the physical interval $$x\in [0, \chi]$$ with $$ x_i \equiv \frac{(i-1) \chi}{N_{coll} - 1}$$ at the collocation indices $$i = 1, 2, ..., N_{coll} $$.
-
-The following code produces the initial visualisation of $$M$$.
+## Gram Polynomials
+In the first step towards Gram-Fourier extensions, we start with a set of $$N$$ polynomials on $$N$$ points defined on the left and right boundary of the physical domain.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_polynomials.png" alt="">
+In order to expand the interpolant in terms of these polynomials, we use the Gram-Schmidt orthogonalisation algorithm to obtain an orthonormal basis set. Since this is a one-off computation, we carry it out in high precision using Python's mpmath library. Alternatively, all of the following computations could be carried out symbolically.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_orthonormal_polynomials.png" alt="">
 
 {%- highlight python -%}
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy
+from mpmath import *
 
-def get_fpic_su_matrix(N, Ncoll, theta, chi):
-    x = np.zeros(Ncoll)
-    M = np.zeros((Ncoll, N))
-    for i in range(Ncoll):
-        for j in range(N):
-            #Collocation points uniformly distributed over the positive half
-            #of the physical interval x in [0, chi]
-            x[i]    = i * chi / (Ncoll - 1)
-            M[i, j] = np.cos(j * np.pi / theta * x[i])
-    return M, x
+mp.dps = 64
+eps = 1e-64
 
-M, x  = get_fpic_su_matrix(N = 500, Ncoll = 300, theta = np.pi, chi = np.pi/2)
+import matplotlib as mpl
 
 plt.style.use('dark_background')
-fig, axs = plt.subplots(figsize=(5, 3), dpi=200)
-plt.axis("off")
-plt.imshow(M,  cmap="magma")
-plt.tight_layout()
-plt.savefig("figures/svd_W.png", bbox_inches='tight')
-plt.show()
+
+# Define your custom colors
+colors = [
+    '#08F7FE',  # teal/cyan
+    '#FE53BB',  # pink
+    '#F5D300',  # yellow
+    '#00ff41',  # matrix green
+    '#FF00FF',  # magenta
+    '#FFA500',  # orange
+    '#00FFFF',  # cyan
+]
+
+# Set the custom color cycle
+mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color=colors)
+
+class GramSchmidt:
+    def __init__(self, x, m):
+        self.x = x
+        self.m = m
+        self.A = mp.zeros(m, len(x))
+        #Linear map for polynomial scalar product
+        for i in range(m):
+            for j in range(len(x)):
+                #Polynomial basis {1, x, x^2, x^3, x^4, ..., x^m}
+                self.A[i, j] = x[j]**i
+
+        #Write basis vector as columns of matrix V
+        self.V = mp.eye(m)
+
+        self.U = self.modified_gram_schmidt_algorithm(self.V)
+
+    def evaluate_basis(self, x, basis_element_index):
+        #Linear map for polynomial scalar product
+        A = mp.zeros(self.m, len(x))
+        for i in range(self.m):
+            for j in range(len(x)):
+                #Polynomial basis {1, x, x^2, x^3, x^4, ..., x^m}
+                A[i, j] = x[j]**i
+        ei = self.U[:, basis_element_index].T * A
+
+        return ei
+
+    def scalar_product(self, u, v):
+        return mp.fsum((u.T * self.A) * (v.T * self.A).T)
+
+    def project_u_onto_v(self, u, v):
+        a1 = self.scalar_product(v, u)
+        a2 = self.scalar_product(u, u)
+        return a1/a2 * u
+
+    def norm(self, u):
+        return mp.sqrt(self.scalar_product(u, u))
+
+    def modified_gram_schmidt_algorithm(self, V):
+        n, k = V.rows, V.cols
+        U    = V.copy()
+        U[:, 0] = V[:, 0] / self.norm(V[:, 0])
+
+        for i in range(1, k):
+            for j in range(i, k):
+                U[:, j] = U[:, j] - self.project_u_onto_v(U[:, i - 1], U[:, j])
+
+
+            U[:, i] = U[:, i] / self.norm(U[:, i])
+        return U
+
+    def project_f_onto_basis(self, f):
+        coeffs = mp.matrix(1, self.m)
+
+        for i in range(self.m):
+            basis = (self.U[:, i].T * self.A)
+            coeffs[0, i] = mp.fsum(f * basis.T)
+
+
+        return coeffs
+
+    def reconstruct_f(self, coeffs, x = None):
+        if x == None:
+            A = self.A
+        else:
+            A = mp.zeros(self.m, len(x))
+            for i in range(self.m):
+                for j in range(len(x)):
+                    #Polynomial basis {1, x, x^2, x^3, x^4, ..., x^m}
+                    self.A[i] = x[j]**i
+
+        frec = mp.matrix(1, A.cols)
+        for i in range(self.m):
+            frec += coeffs[0, i] * (self.U[:, i].T * A)
+        return frec
+
+    def plot_polynomials(self):
+        m = self.m
+        u_ij = mp.zeros(m)
+
+        fig, axs = plt.subplots(figsize=(5, 3), dpi=200)
+        plt.title(f"Polynomials")
+        plt.axis("off")
+        for i in range(m):
+            plt.plot(x, self.V[:, i].T * self.A, label=f"$x^{i}$")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig("figures/gramfe_polynomials.png", bbox_inches='tight')
+        plt.show()
+
+        fig, axs = plt.subplots(figsize=(5, 3), dpi=200)
+        plt.title(f"Orthonormalised polynomials")
+        plt.axis("off")
+        for i in range(m):
+            plt.plot(self.x, self.U[:, i].T * self.A, label=f"{i}")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig("figures/gramfe_orthonormal_polynomials.png", bbox_inches='tight')
+        plt.show()
+
+        print("The orthonormalised polynomials and their scalar products")
+        for i in range(m):
+            for j in range(m):
+                u_ij[i, j] = self.scalar_product(self.U[:, i], self.U[:, j])
+            print(f"i = {i} u_ij = {u_ij[i, :]}")
+
+x = mp.linspace(0, 1, 20)
+gs = GramSchmidt(x, 5)
+gs.plot_polynomials()
 {%- endhighlight -%}
 
-## The right choice of physical and extension domain
-The next choice is to be made about the ideal domain sizes for the extension. The following figure shows different choices of the physical domain size $$\chi$$ as a function of the extension domain size $$\Theta$$.
+## SVD Extensions
+For an introduction to SVD extensions, please see the [previous post][svd-post]
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_fig_8.png" alt="">. In the following, we compute suitable SVD extensions of the orthonormal basis set derived in the previous section.  Since we work in arbitrary precision, we do not need to truncate the singular values of the SVD and also do not require iterative refinement. If the calculation is not accurate enough, one can simply increase the number of significant digits. Furthermore, we can directly solve the complex optimisation problem without a split into symmetric and antisymmetric part. This simplifies the code. At the same time, there is an additional complication because we compute two independent extensions for the left and right domain boundary: How to stitch them together? Lyon proposes to compute an even and an odd extensions respectively using only even and odd wave vectors. By taking linear combinations of the two, one obtains extensions that smoothly decay to zero. These extensions can be stitched together to obtain a global periodic extension.
 
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_fig_8.png" alt="">
-
-The smaller the extension domain with respect to the physical domain, the better the conditioning of $$M$$.
+The following plot shows even and odd extensions (blue graphs on the left and right) for the Gram polynomials (pink) of order $$0$$ to $$4$$ (top to bottom).
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_even_and_odd_extensions.png" alt="">
 
 
 ## The need for iterative refinement
@@ -213,3 +317,5 @@ plt.show()
 
 ## Remaining issues
 Fourier extensions of the third kind can be very accurate when overcollocation and iterative refinement are used. This accuracy comes at a price, however: A typical SVD factorisation requires $$\mathcal{O}(N^3)$$ operations. The iteration refinement adds $$\mathcal{O}(2 N^2 + 2 N_{coll}^2)$$ operations per iteration. The overcollocation requirement dictates that $$\Delta x$$ is at least halved in the extension domain compared to the physical domain. When the number of collocation points is limited as in the case of interpolation or a PDE solver, the requirements of Fourier extensions of the third kind can be hardly met and are computationally prohibitively expensive. In addition, my own numerical experiments indicate that numerical stability of a PDE solver built with this method is an issue. Lastly, there are no analytical convergence guarantees for Fourier extensions of the third kind. Fortunately, all of these issues are resolved by Gram-Fourier extensions that we are going to look at in the last part of this series.
+
+[svd-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-svd-extension-post/
