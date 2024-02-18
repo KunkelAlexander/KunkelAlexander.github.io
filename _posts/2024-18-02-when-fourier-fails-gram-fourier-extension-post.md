@@ -13,6 +13,7 @@ description: One extension to rule them all. How to efficiently reuse accurate S
 ## Intro
 This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In this post, we study Gram-Fourier extensions. This method was first described in Lyon's PhD thesis <a href="https://thesis.library.caltech.edu/2992/1/lyon_thesis_A100Final.pdf"> High-order unconditionally-stable FC-AD PDE solvers for general domains </a>.
 This method combines the accuracy of SVD extensions with the computational advantages of polynomial expansions. You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_boundary_polynomials.png" alt="">
 
 ## The merits of Gram-Fourier extensions
 In the [previous post][svd-post], we looked at SVD extensions: Periodic extensions obtained through solving a least-squares optimisation problem. They can be highly accurate, but are computationally expensive and require many collocation points for good results. The Gram-Fourier extension method remedies these drawbacks. Instead of computing SVD extensions of an interpolant at runtime, one precomputes SVD extensions of a set of polynomial basis functions, so-called Gram polynomial. The interpolant is expanded in terms of this polynomial basis set at the domain boundaries. But instead of summing the original polynomials, one then sums the precomputed periodic extensions of the polynomials and obtains a periodic function. In other words, one precomputes a change-of-basis from a polynomial basis to a periodic basis.
@@ -24,7 +25,93 @@ In the first step towards Gram-Fourier extensions, we start with a set of $$N$$ 
 In order to expand the interpolant in terms of these polynomials, we use the Gram-Schmidt orthogonalisation algorithm to obtain an orthonormal basis set. Since this is a one-off computation, we carry it out in high precision using Python's mpmath library. Alternatively, all of the following computations could be carried out symbolically.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_orthonormal_polynomials.png" alt="">
 
+
+## SVD Extensions
+For an introduction to SVD extensions, please see the [previous post][svd-post] in the series. In the following, we compute suitable SVD extensions of the orthonormal basis set derived in the previous section. What are the free parameters of the Gram-Fourier extension?
+
+Firstly, we choose the size of the boundary domain $$n_{\Delta}$$. It determines the maximum polynomial order that can live on the boundary and therefore the accuracy of the scheme. Secondly, we choose the maximum polynomial order $$m$$ for the boundary. Lyon's thesis suggests to choose $$m < n_{\Delta}$$ for stability, but personally, I find $$m = n_{\Delta} = 10$$ to work well in most cases. Thirdly, we choose the number of collocation points $$\Gamma$$ and the number of points in the extension domain $$n_D$$. We have already learnt that $$\Gamma > n_D$$, i.e. overcollocation, improves the quality of SVD extensions. Lyon suggests $$\Gamma = 150$$ and $$n_D$$ smaller. I have experimented with $$10 < n_D < 128$$ and find values $$n_D > 20$$ to work well. Since we work in arbitrary precision, we do not need to truncate the singular values of the SVD and also do not require iterative refinement. If the calculation is not accurate enough, one can simply increase the number of significant digits. Furthermore, we can directly solve the complex optimisation problem without a split into symmetric and antisymmetric part. This simplifies the code. At the same time, there is an additional complication because we compute two independent extensions for the left and right domain boundary: How to stitch them together? Lyon proposes to compute an even and an odd extensions respectively using only a number of $$g$$ even and odd wave vectors with $$g=63$$. By taking linear combinations of the two, one obtains extensions that smoothly decay to zero. These extensions can be stitched together to obtain a global periodic extension. Note that many of the above parameters are more or less arbitrary. Personally, I can confirm that the parameter choices Lyon's thesis proposes work well, but depending on your application you may choose different parameters.
+
+The following plot shows the even and odd extensions $$f_{even}$$ and $$f_{odd}$$ (blue graphs on the left and right) alongside the Gram polynomials (pink) of order $$0$$ to $$4$$ (top to bottom). The white, vertical, dashed line at $$x = \Delta$$ denotes the symmetrix axis of the even and odd extensions: $$f_{even}(x) = f_{even}(x+\Delta)$$ and $$f_{odd}(x) = -f_{odd}(x + Delta)$$.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_even_and_odd_extensions.png" alt="">
+
+The SVD extensions so obtained describe the Gram polynomials in the physical domain very well. One can reliably achieve a maximum approximation error below any desired value (i.e. $$100$$ significant digits) on the entire physical domain.
+
+## An example
+Finally, let us take a look at the function $$f(x) = \exp(x)$$ on $$[0, \pi]$$ and compute its Gram-Fourier extension for $$N=32$$, $$m=n_{\Delta} = 5$$, $$n_D = 26$$, $$\Gamma = 150$$ and $$g = 63$$. We project the function $$f$$ in the left and right boundary domains onto polynomials of orders $$0$$ to $$4$$ to obtain $$a_{left}$$ and $$a_{right}$$. In the second step, we use these coefficients to compute linear combinations of the even and odd extensions that smoothly decay to zero.
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_zero_extension.png" alt="">
+
+Ignoring the parts where the extension is zero, one obtains the following plot:
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_extension.png" alt="">
+
+
 {%- highlight python -%}
+def func(x):
+    return np.exp(x)
+L   = np.pi
+N   = 32
+dx  = L/N
+x   = np.arange(0, N) * dx
+f   = func(x)
+
+# Interpolant at boundaries
+f_left   = f[:nDelta]
+f_right  = f[-nDelta:]
+
+# Project interpolant at boundaries onto Gram polynomials
+a_left   = Pl_numpy @ f_left
+a_right  = Pr_numpy @ f_right
+
+# Project interpolant at boundaries onto Gram polynomials
+f_left_rec  = a_left @ Pl_numpy
+f_right_rec = a_right @ Pr_numpy
+
+f_zero_left  = a_left/2  @ F_even_numpy - a_left/2  @ F_odd_numpy
+f_zero_right = a_right/2 @ F_even_numpy + a_right/2 @ F_odd_numpy
+
+
+f_ext_left  = f_zero_left[:nd+nDelta-1]
+f_ext_right = f_zero_right[nDelta-1:-nd+2]
+
+fig, axs = plt.subplots(figsize=(5, 3), dpi=200)
+
+plt.axis("off")
+plt.plot(x, f)
+plt.plot(x[ :nDelta], f_left_rec)
+plt.axvspan(0, x[nDelta-1], color=colors[1], alpha=0.2)
+plt.plot(x[-nDelta:], f_right_rec)
+plt.axvspan(x[-nDelta], x[-1], color=colors[2], alpha=0.2)
+
+plt.plot(np.arange(-len(f_ext_left) + 1, 1) * dx, f_ext_left)
+plt.plot(np.arange(N-1, N - 1 + len(f_ext_right)) * dx, f_ext_right)
+plt.axvspan((-len(f_ext_left) + 1) * dx, 0, color="white", alpha=0.1)
+plt.axvspan((N-1) * dx, (N - 1 + len(f_ext_right)) * dx, color="white", alpha=0.1)
+
+plt.tight_layout()
+plt.savefig("figures/gramfe_zero_extension.png", bbox_inches='tight')
+plt.show()
+
+
+fmatch = (a_left + a_right)/2 @ F_even_numpy + (a_right - a_left)/2 @ F_odd_numpy
+
+f_periodic = np.concatenate([f, fmatch[nDelta:nDelta + nd - 2]])
+
+fig, axs = plt.subplots(figsize=(5, 3), dpi=200)
+plt.axis("off")
+plt.plot(np.arange(len(f_periodic)) * dx, f_periodic, c=colors[1], label="Extension")
+plt.plot(x, f, c=colors[0], label=r"$f(x) = \exp(x)$")
+plt.axvspan((N - 1) * dx, (len(f_periodic) - 1) * dx, color="white", alpha=0.1)
+plt.legend()
+plt.tight_layout()
+plt.savefig("figures/gramfe_extension.png", bbox_inches='tight')
+plt.show()
+{%- endhighlight -%}
+
+
+## Code
+The code accompanying this post is lengthy. I recommend you take a look at the Jupyter notebook in the Github repository.
+
+{%- highlight python -%}
+
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
@@ -160,162 +247,269 @@ class GramSchmidt:
 x = mp.linspace(0, 1, 20)
 gs = GramSchmidt(x, 5)
 gs.plot_polynomials()
-{%- endhighlight -%}
 
-## SVD Extensions
-For an introduction to SVD extensions, please see the [previous post][svd-post]
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_fig_8.png" alt="">. In the following, we compute suitable SVD extensions of the orthonormal basis set derived in the previous section.  Since we work in arbitrary precision, we do not need to truncate the singular values of the SVD and also do not require iterative refinement. If the calculation is not accurate enough, one can simply increase the number of significant digits. Furthermore, we can directly solve the complex optimisation problem without a split into symmetric and antisymmetric part. This simplifies the code. At the same time, there is an additional complication because we compute two independent extensions for the left and right domain boundary: How to stitch them together? Lyon proposes to compute an even and an odd extensions respectively using only even and odd wave vectors. By taking linear combinations of the two, one obtains extensions that smoothly decay to zero. These extensions can be stitched together to obtain a global periodic extension.
-
-The following plot shows even and odd extensions (blue graphs on the left and right) for the Gram polynomials (pink) of order $$0$$ to $$4$$ (top to bottom).
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_even_and_odd_extensions.png" alt="">
+M_ALL_K  = 0
+M_EVEN_K = 1
+M_ODD_K  = 2
 
 
-## The need for iterative refinement
+def get_wave_vectors(g, mode = M_ALL_K):
+    if g % 2 == 0:
+        k = np.arange(-int(-g/2) + 1, int(g/2) + 1)
+    else:
+        k = np.arange(-int((g-1)/2), int((g-1)/2) + 1)
 
-With this knowledge, we can set out to compute a periodic extension of the even function $$f(x) = x^2$$ shown in the next plot.
+    if mode == M_EVEN_K:
+        k = k[k % 2 == 0]
+    elif mode == M_ODD_K:
+        k = k[k % 2 == 1]
 
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_1.png" alt="">
+    return k * mp.mpf(1)
 
-The mismatch between the extension and the original function in the physical domain is good, but far from the desired machine precision:
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_1_accuracy" alt="">
+def get_grid(Delta, Gamma):
+    dxeval = Delta/(Gamma - 1)
+    xeval  = mp.matrix(1, Gamma)
+    for i in range(Gamma):
+        xeval[0, i] = 1 - Delta + i * dxeval
+    return xeval
 
-As explained in Boyd's paper, iterative refinement is another helpful trick for ill-conditioned linear systems. Applying it increases the precision of the extension drastically:
+def get_svd_extension_matrix(g, Gamma, Delta, d, mode):
+    ks = get_wave_vectors(g, mode)
+    x  = get_grid(Delta, Gamma)
+    M  = mp.matrix(Gamma, len(ks))
+    for i in range(Gamma):
+        for j, k in enumerate(ks):
+            M[i, j] = mp.exp(1j * k * np.pi / (d + Delta) * x[0, i])
+    return M
 
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_2_accuracy" alt="">
-
-
-{%- highlight python -%}
-def func(x):
-    return x**2
-
-def truncated_svd_invert(M, cutoff):
-    U, s, Vh = scipy.linalg.svd(M)
-    sinv = np.zeros(M.T.shape)
-    for i in range(np.min(M.shape)):
+def invert_svd_extension_matrix(M, cutoff):
+    U, s, Vh = mp.svd(M)
+    sinv = mp.diag(s)
+    r = M.cols
+    if M.rows < M.cols:
+        r = M.rows
+    for i in range(r):
         if s[i] < cutoff:
             sinv[i, i] = 0
         else:
             sinv[i, i] = 1/s[i]
-    return Vh.T @ sinv @ U.T
 
-def iterative_refinement(M, Minv, f, threshold = 100, maxiter = 5):
-    a       = Minv @ f
-    r       = M @ a - f
+    Vht = Vh.transpose_conj()
+    Ut  = U.transpose_conj()
+    f1  = sinv * Ut
+    f2  = Vht * f1
+    return  f2
+
+def reconstruct_svd_extension(x, a, g, Gamma, Delta, d, mode):
+    ks = get_wave_vectors(g, mode)
+    rec = mp.matrix(1, len(x))
+    for j, coeff in enumerate(a):
+        for i in range(len(x)):
+            rec[i] += coeff * mp.exp(1j * ks[j] * np.pi / (d + Delta) * x[i])
+    return rec
+
+
+def iterative_refinement(M, Minv, f, threshold = 100, maxiter = 1000):
+    a       = Minv * f.T
+    r       = M * a - f.T
     counter = 0
-    while np.linalg.norm(r) > threshold * np.finfo(float).eps * np.linalg.norm(a) and counter < maxiter:
-        delta    = Minv @ r
+    while mp.norm(r) > 2 * eps * mp.norm(a) and counter < maxiter:
+        delta    = Minv * r
         a        = a - delta
-        r        = M @ a - f
+        r        = M * a - f.T
         counter += 1
     return a
 
-def reconstruct(x, a, theta):
-    rec = np.zeros(x.shape)
-    for j, coeff in enumerate(a):
-        rec += coeff * np.cos(np.pi / theta * j * x)
-    return rec
+def compute_svd_extension(x, g, Gamma, Delta, d, mode, f, threshold = 10, maxiter = 10):
+    M     = get_svd_extension_matrix(g, Gamma, Delta, d, mode)
+    Minv  = invert_svd_extension_matrix(M, 0)
+    a     = iterative_refinement(M, Minv, f)
+    frec  = reconstruct_svd_extension(x, a, g, Gamma, Delta, d, mode)
+    return frec
 
-N     = 32
-Ncoll = N
-theta = np.pi
-chi   = theta/2
-M, x  = get_fpic_su_matrix(N, Ncoll, theta, chi)
-f     = func(x)
-Minv  = truncated_svd_invert(M, cutoff = 1e-13)
-a1    = Minv @ f
-a2    = iterative_refinement(M, Minv, f, threshold = 1000, maxiter = 4)
-xext  = np.linspace(0, 2 * theta, 1000)
-frec1 = reconstruct(xext, a1, theta)
-frec2 = reconstruct(xext, a2, theta)
+#### DEFAULT PARAMS
+# m      = 10
+# n      = 10
+# nDelta = 10
+# nd     = 27
+# Gamma  = 150
+# g      = 63
+####################
+m      = 5
+nDelta = 5
+nd     = 26
+Gamma  = 150
+g      = 63
+
+h      = 1/(nd - 1)
+d      = (nd - 1) * h
+Delta  = (nDelta  - 1) * h
+
+x = mp.linspace(0, 1, nd)
+
+leftBoundary  = x[       :nDelta]
+rightBoundary = x[-nDelta:      ]
+
+# Note that these two basis sets are identical
+# A difference could only arise if one decided to have different boundary sizes
+lgs = GramSchmidt(leftBoundary, m)
+rgs = GramSchmidt(rightBoundary, m)
+
+dxeval = Delta/(Gamma - 1)
+xeval  = mp.matrix(1, Gamma)
+for i in range(Gamma):
+    xeval[0, i] = 1 - Delta + i * dxeval
+
+fig, axs = plt.subplots(figsize=(5, 3), dpi=200)
+for i in range(m):
+    yeval = rgs.evaluate_basis(xeval, i)
+    plt.plot(xeval, yeval, label=f"{i}th basis element")
+plt.axis("off")
+plt.tight_layout()
+plt.savefig("figures/gramfe_boundary_polynomials.png", bbox_inches='tight')
+plt.show()
 
 
-for i, frec in enumerate([frec1, frec2]):
-    # Plot f and extended f
-    fig, axs = plt.subplots(figsize=(5 , 3), dpi=200)
-    plt.title(r"Periodic extension of $f(x) = x^2$ for $\chi=\pi/2$ and $\Theta = \pi$")
-    # Graphs
-    plt.plot(xext, frec, label="Extension", c=colors[0])
-    plt.plot(xext, func(xext), label="Original", c=colors[1])
-    # Axes
-    plt.ylim(np.min(frec) - 1, np.max(frec) + 1)
-    plt.xticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi], [0, r"$\pi/2$", r"$\pi$", r"$3\pi/2$", r"$2\pi$"])
-    axs.spines['top'].set_visible(False)
-    axs.spines['right'].set_visible(False)
-    axs.spines['left'].set_visible(False)
-    axs.get_yaxis().set_ticks([])
-    # Save plot
-    plt.tight_layout()
-    plt.savefig(f"figures/svd_{i+1}.png", bbox_inches='tight')
-    plt.legend()
-    plt.show()
+xext  = mp.linspace(1 - Delta, 1 + Delta + 2*d, 1000)
+mode = M_EVEN_K
+M     = get_svd_extension_matrix(g, Gamma, Delta, d, mode)
+Minv  = invert_svd_extension_matrix(M, 0)
+evencoeffs = []
+evenbasis = []
+evenfrecs = []
+for i in range(m):
+    yeval = rgs.evaluate_basis(xeval, i)
+    a     = iterative_refinement(M, Minv, yeval)
+    frec  = reconstruct_svd_extension(xext, a, g, Gamma, Delta, d, mode)
+    evencoeffs.append(a)
+    evenbasis.append(yeval)
+    evenfrecs.append(frec)
 
-    # Plot error
-    fig, axs = plt.subplots(figsize=(5 , 3), dpi=200)
-    plt.title(r"Mismatch between $f$ and $\hat{f}$ in physical domain")
-    # Physical domain
-    ul = np.argwhere(xext<chi)[-1][0]
-    xorg = xext[:ul]
-    plt.yscale("log")
-    plt.xticks([0, np.pi/4, np.pi/2], [0, r"$\pi/4$", r"$\pi/2$"])
-    plt.plot(xorg, np.abs(func(xorg) - frec[:ul]), c=colors[0])
-    plt.tight_layout()
-    plt.savefig(f"figures/svd_{i+1}_accuracy.png", bbox_inches='tight')
-    plt.show()
-{%- endhighlight -%}
 
-## The need for overcollocation
+mode = M_ODD_K
+M     = get_svd_extension_matrix(g, Gamma, Delta, d, mode)
+Minv  = invert_svd_extension_matrix(M, 0)
+oddcoeffs = []
+oddbasis = []
+oddfrecs = []
+for i in range(m):
+    yeval = rgs.evaluate_basis(xeval, i)
+    a     = iterative_refinement(M, Minv, yeval)
+    frec  = reconstruct_svd_extension(xext, a, g, Gamma, Delta, d, mode)
+    oddcoeffs.append(a)
+    oddbasis.append(yeval)
+    oddfrecs.append(frec)
 
-A part of the ill-conditioning of Fourier extensions stems from the fact that there are functions which are small on collocation grid, but large in the gaps between the interpolation points. This can be remedied by having a number of collocation points $$N_{coll}$$ much larger than $$N$$, the number of Fourier coefficients.  In this case, the scheme can detect large-amplitude oscillations of $$f$$ and produce more accurate extensions. The following plot shows reconstruction errors of $$f(x) = \cos(40.5 x)$$ on $$[0, \pi/2]$$ for different numbers of Fourier modes in two cases: a square-matrix $$M$$ where $$N_{coll} = N$$ and an overcollocation case where $$N_{coll} = 2\cdot N$$.
+r = m
+Next = 2 * nd + 2 * nDelta - 4
+xstore = mp.matrix(1, Next)
+for i in range(Next):
+    xstore[i] = 1 - Delta + i * h
 
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_why_overcollocation.png" alt="">
+F = mp.matrix(2 * r, Next)
 
-The achievable accuracy in the second case is significantly higher.
-{%- highlight python -%}
+mode = M_EVEN_K
 
-theta = np.pi
-chi   = theta/2
-xext  = np.linspace(0, theta, 1000)
-ul    = np.argwhere(xext<chi)[-1][0]
+for i in range(r):
+    F[i, :] = reconstruct_svd_extension(xstore, evencoeffs[i], g, Gamma, Delta, d, mode)
+
+mode = M_ODD_K
+for i in range(r):
+    F[i+m, :] = reconstruct_svd_extension(xstore, oddcoeffs[i], g, Gamma, Delta, d, mode)
+
+Pr = mp.matrix(m, nDelta)
+Pl = mp.matrix(m, nDelta)
+for i in range(r):
+    Pr[i, :] = rgs.evaluate_basis(rightBoundary, i)
+    Pl[i, :] = lgs.evaluate_basis(leftBoundary, i)
+
+    F_real = F.apply(mp.re)
+
+F_even = F_real[:m, :]
+F_odd  = F_real[m:, :]
+
+F_even_numpy = np.array(F_even, dtype=float).reshape(r, Next)
+F_even_numpy.tofile(f"F_even_nD={nDelta}_nd={nd}_g={g}_Gamma={Gamma}.bin")
+F_odd_numpy  = np.array(F_odd, dtype=float).reshape(r, Next)
+F_odd_numpy.tofile(f"F_odd_nD={nDelta}_nd={nd}_g={g}_Gamma={Gamma}.bin")
+Pl_numpy = np.array(Pl, dtype=float).reshape(r, nDelta)
+Pl_numpy.tofile(f"P_left_nD={nDelta}.bin")
+Pr_numpy = np.array(Pr, dtype=float).reshape(r, nDelta)
+Pr_numpy.tofile(f"P_right_nD={nDelta}.bin")
+
+fig, axs = plt.subplots(m, 2, figsize=(5, 2*m), dpi=200)
+fig.tight_layout(pad=0.0)
+
+Next = len(F_real[i, :])
+for i in range(m):
+    #axs[i, 0].set_ylim(-2-100*i, 2+100*i)
+    axs[i, 0].plot(F_even[i, :])
+    axs[i, 0].axvspan(Next/2, Next, alpha=0.2)
+    axs[i, 0].axvline(Next/2, c="white", ls="dashed", alpha=0.5)
+    axs[i, 0].plot(Pl[i, :], lw=2)
+    #axs[i, 1].set_ylim(-2, 2)
+    axs[i, 1].plot(F_odd[i, :])
+    axs[i, 1].plot(Pl[i, :], lw=2)
+    axs[i, 1].axvspan(Next/2, Next, alpha=0.2)
+    axs[i, 1].axvline(Next/2, c="white", ls="dashed", alpha=0.5)
+    for j in range(2):
+        axs[i, j].spines['top'].set_visible(False)
+        axs[i, j].spines['right'].set_visible(False)
+        axs[i, j].spines['bottom'].set_visible(False)
+        axs[i, j].get_xaxis().set_ticks([])
+        if j == 1:
+            axs[i, j].spines['left'].set_visible(False)
+            axs[i, j].get_yaxis().set_ticks([])
+plt.tight_layout()
+plt.savefig("figures/gramfe_even_and_odd_extensions.png", bbox_inches='tight')
+plt.show()
 
 def func(x):
-    return np.cos(40.5*x)
+    return np.exp(x)
+L   = np.pi
+N   = 32
+dx  = L/N
+x   = np.arange(0, N) * dx
+f   = func(x)
 
-fig, ax = plt.subplots(1, 2, figsize=(5, 3), dpi=200, sharey=True)
-ax[0].set_title(r"$N_{coll}=N$")
-ax[0].set_xlabel(r"$N$")
-ax[1].set_xlabel(r"$N$")
-ax[0].set_ylabel("Reconstruction error")
-ax[0].set_yscale("log")
-ax[0].set_ylim([1e-14, 1e8])
-ax[1].set_ylim([1e-14, 1e8])
-ax[1].set_title(r"$N_{coll} = 2 N$")
+# Interpolant at boundaries
+fl  = f[:nDelta]
+fr  = f[-nDelta:]
 
-Ns         = np.arange(5, 100, 1)
-iterations = [0, 1, 2, 3]
-cutoff     = 1e-13
-threshold  = 2
-for axis, alpha in zip([0, 1], [1, 2]):
-    for iteration in iterations:
-        err = []
-        for N in Ns:
-            Ncoll = N * alpha
-            M, x  = get_fpic_su_matrix(N, Ncoll, theta, chi)
-            f     = func(x)
-            Minv  = truncated_svd_invert(M, cutoff)
-            a    = iterative_refinement(M, Minv, f, threshold = threshold, maxiter = iteration)
-            frec = reconstruct(xext, a, theta)
-            err.append(np.linalg.norm((frec - func(xext))[:ul]))
+# Project interpolant at boundaries onto Gram polynomials
+al  = Pl_numpy @ fl
+ar  = Pr_numpy @ fr
 
-        ax[axis].plot(Ns, err, label=r"$N_{iter}$" + f" = {iteration}", c = colors[iteration])
+# Project interpolant at boundaries onto Gram polynomials
+fl_rec  = al @ Pl_numpy
+fr_rec  = ar @ Pr_numpy
+
+f_zero_left  = al/2 @ F_even_numpy - al/2 @ F_odd_numpy
+f_zero_right = ar/2 @ F_even_numpy + ar/2 @ F_odd_numpy
 
 
-ax[1].legend()
-fig.subplots_adjust(wspace = 0)
-plt.savefig(f"figures/svd_why_overcollocation.png", bbox_inches='tight')
+fleft  = f_zero_left[:nd+nDelta-1]
+fright = f_zero_right[nDelta-1:-nd+2]
+
+
+fig, axs = plt.subplots(figsize=(5, 3), dpi=200)
+
+plt.axis("off")
+plt.plot(x, f)
+plt.plot(x[ :nDelta], fl_rec)
+plt.axvspan(0, x[nDelta-1], color=colors[1], alpha=0.2)
+plt.plot(x[-nDelta:], fr_rec)
+plt.axvspan(x[-nDelta], x[-1], color=colors[2], alpha=0.2)
+
+plt.plot(np.arange(-len(fleft) + 1, 1) * dx, fleft)
+plt.plot(np.arange(N-1, N - 1 + len(fright)) * dx, fright)
+plt.axvspan((-len(fleft) + 1) * dx, 0, color="white", alpha=0.1)
+plt.axvspan((N-1) * dx, (N - 1 + len(fright)) * dx, color="white", alpha=0.1)
+
+plt.tight_layout()
+plt.savefig("figures/gramfe_zero_extension.png", bbox_inches='tight')
 plt.show()
 {%- endhighlight -%}
 
-## Remaining issues
-Fourier extensions of the third kind can be very accurate when overcollocation and iterative refinement are used. This accuracy comes at a price, however: A typical SVD factorisation requires $$\mathcal{O}(N^3)$$ operations. The iteration refinement adds $$\mathcal{O}(2 N^2 + 2 N_{coll}^2)$$ operations per iteration. The overcollocation requirement dictates that $$\Delta x$$ is at least halved in the extension domain compared to the physical domain. When the number of collocation points is limited as in the case of interpolation or a PDE solver, the requirements of Fourier extensions of the third kind can be hardly met and are computationally prohibitively expensive. In addition, my own numerical experiments indicate that numerical stability of a PDE solver built with this method is an issue. Lastly, there are no analytical convergence guarantees for Fourier extensions of the third kind. Fortunately, all of these issues are resolved by Gram-Fourier extensions that we are going to look at in the last part of this series.
 
 [svd-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-svd-extension-post/
