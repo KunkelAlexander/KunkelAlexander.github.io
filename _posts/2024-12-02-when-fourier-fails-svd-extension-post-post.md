@@ -27,16 +27,4 @@ The points $$x_j$$ are collocation points in the physical domain $$[0, \chi]$$. 
 ## Collocation matrix
 According to my experience, solving the above complex expressions directly leads to poor results. Instead, one should compute separate extensions for the real and imaginary parts of a complex input function. Moreover, Boyd suggests to split a general real input function $$g(x)$$ into its symmetric and antisymmetric parts $$S(x) = g(x)/2 + g(-x)/2$$ and $$A(x) = A(x)/2 - A(-x)/2$$. The optimisation is then carried out separately for $$S$$ and $$A$$. The symmetric part $$S(x) \equiv f(x)$$ allows for a periodic extension in terms of a cosine series whereas the antisymmetric part requires a sine series. In the following, we focus on the symmetric part, but the antisymmetric part follows analogously.
 
-The Fourier coefficients of the cosine interpolation are the solution of the matrix problem
-
-$$M\hat{a} = f$$,
-
-where
-
-$$ M_{ij} = \cos\left([j-1] \frac{\pi}{\Theta} x_i\right),\qquad i = 1, 2, ..., N_{coll},\qquad j = 1, 2, ..., N$$
-and $$f_i = f(x_i), \qquad i = 1, 2, ..., N_{coll}$$,
-
-where the collocation points are uniformly distributed over the positive half of the physical interval $$x\in [0, \chi]$$ with
-
-$$ x_i \equiv \frac{(i-1) \chi}{N_{coll} - 1}, \qquad i = 1, 2, ..., N_{coll} $$. The matrix $$M$$ is shown in the introduction.
-In the next step, it is
+The Fourier coefficients of the cosine interpolation are the solution of the matrix problem $$M\hat{a} = f$$, where $$ M_{ij} = \cos\left([j-1] \frac{\pi}{\Theta} x_i\right)$$ with $$i = 1, 2, ..., N_{coll}$$, $$j = 1, 2, ..., N$$ and $$f_i = f(x_i), \qquad i = 1, 2, ..., N_{coll}$$. The collocation points are uniformly distributed over the positive half of the physical interval $$x\in [0, \chi]$$ with $$ x_i \equiv \frac{(i-1) \chi}{N_{coll} - 1}, \qquad i = 1, 2, ..., N_{coll} $$. The matrix $$M$$ is shown in the introduction.
