@@ -12,7 +12,7 @@ description: Learn about the magic of high-precision extensions using SVDs.
 
 ## Intro
 This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In this post, we delve into Fourier extensions using truncated singular value decompositions. The method presented here is known as Fourier extension of the third kind as described in Boyd's insightful paper <a href="https://www.sciencedirect.com/science/article/abs/pii/S0021999102970233"> A Comparison of Numerical Algorithms for Fourier Extension of the First, Second, and Third Kinds </a>.
-SVD extensions are particularly simple and beautiful: Instead of aiming to find a periodic extension and then Fourier transform, one instead solves a linear system whose solutions are the Fourier coeffients. You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>. Can you guess the definition of the linear operator from looking at its matrix representation?
+SVD extensions are particularly simple and beautiful: Instead of aiming to find a periodic extension and then Fourier transform, one instead solves a linear system whose solutions are the Fourier coeffients. You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>. The respective notebook also contains code to compute SVD extensions of arbitrary, complex functions.
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_W.png" alt="">
 
@@ -156,10 +156,14 @@ for i, frec in enumerate([frec1, frec2]):
 
 ## The need for overcollocation
 
-A part of the ill-conditioning of Fourier extensions stems from the fact that there are functions which are small on collocation grid, but large in the gaps between the interpolation points. This can be remedied by having a number of collocation points $$N_{coll}$$ much larger than $$N$$, the number of Fourier coefficients.  In this case, the scheme can detect large-amplitude oscillations of $$f$$ and produce more accurate extensions. The following plot shows reconstruction errors of $$f(x) = \cos(40.5 x)$$ on $$[0, \pi/2]$$ as a function of the number of iterations $$N_{iter}$$ in the iterative refinement for different numbers $$N$$ of Fourier modes in two cases: a square-matrix $$M$$ where $$N_{coll} = N$$ and an overcollocation case where $$N_{coll} = 2\cdot N$$.
+A part of the ill-conditioning of Fourier extensions stems from the fact that there are functions which are small on the collocation grid, but large in the gaps between the interpolation points. This can be remedied by having a number of collocation points $$N_{coll}$$ much larger than $$N$$, the number of Fourier coefficients.  In this case, the scheme can detect large-amplitude oscillations of $$f$$ and produce more accurate extensions. The following plot shows reconstruction errors of $$f(x) = \cos(40.5 x)$$ on $$[0, \pi/2]$$ as a function of the number of iterations $$N_{iter}$$ in the iterative refinement for different numbers $$N$$ of Fourier modes in two cases: a square-matrix $$M$$ where $$N_{coll} = N$$ and an overcollocation case where $$N_{coll} = 2\cdot N$$.
 The achievable accuracy in the second case is significantly higher.
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_why_overcollocation.png" alt="">
+
+For the sake of comparability, the following plot shows the accuracy of derivatives of $$f(x) = \exp(x)$$ computed using SVD extensions with $$N_{coll} = 2 N$$, $$N=100$$ on $$[0, \chi = \pi]$$ for $$N_{iter} = 10$$ refinement iterations. While the accuracy is high, the ill-conditioning of the collocation matrix prevents us from accessing high-order derivatives. Note that this extension needs a generalisation of the even extension developed above. You can find the more general code at the end of the Jupyter notebook in the Github repository.
+
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_accuracy.png" alt="">
 
 
 ## Issues
