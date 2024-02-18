@@ -15,21 +15,22 @@ This series of posts looks into different strategies for interpolating non-perio
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/runge.png" alt="">
 
-Runge's phenomenon shows that high-order polynomial interpolation is potentially unstable. Fourier methods for periodic data do not share this limitation and achieve spectral accuracy: Exponential convergence of the interpolant to the data with the number of grid points. Yet, Fourier methods expect smooth, periodic data and otherwise suffer from [Gibbs's phenomenon][gibbs-wiki].
+Runge's phenomenon shows that high-order polynomial interpolation [is unstable][fd-post]. Fourier methods for periodic data do not share this limitation and achieve spectral accuracy: Exponential convergence of the interpolant to the data with the number of grid points. Yet, Fourier methods expect smooth, periodic data and otherwise suffer from [Gibbs's phenomenon][gibbs-wiki].
 
 One way to achieve higher accuracy using polynomial interpolants is to switch to a different grid: the Chebyshev grid. For more information, read the [excellent book on the subject][boyd-cheby] by John P. Boyd. If one is in the unfortunate situation to be limited to a uniform grid, however, there are alternative approaches with varying degrees of accuracy
 Such alternative approaches include
-- Filters and mollifiers
-- Subtraction methods
+- [Filters][filter-post]
+- [Mollifiers][mollifier-post]
+- [Subtraction methods][subtraction-post]
 - Gegenbauer methods
-- Inverse polynomial reconstructions
+- [Inverse polynomial reconstructions][ipr-post]
 - Modified Fourier transforms using Eckhoff's method
 - Transparent boundary conditions
-- Local Fourier bases
+- [Local Fourier bases][lfb-post]
 - Singular Fourier-Padé expansions
-- Polynomial least squares methods
-- Periodic SVD extensions
-- Gram-Fourier extensions
+- Polynomial least-squares methods
+- [SVD extensions][svd-post]
+- [Gram-Fourier extensions][gram-fe-post]
 
 In the following, we will look at filters.  You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>.
 
@@ -128,3 +129,11 @@ for i, filter in enumerate(filters):
 [runge-wiki]: https://en.wikipedia.org/wiki/Runge's_phenomenon
 [gibbs-wiki]: https://en.wikipedia.org/wiki/Gibbs_phenomenon
 [boyd-cheby]: https://depts.washington.edu/ph506/Boyd.pdf
+[fd-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-finite-differences-post/
+[filter-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/
+[mollifier-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-local-fourier-basis-post/
+[subtraction-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-subtraction-post/
+[ipr-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-inverse-polynomial-reconstruction-post/
+[lfb-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-local-fourier-basis-post/
+[svd-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-svd-extension-post/
+[gram-fe-post]: https://kunkelalexander.github.io/blog/when-fourier-fails-gram-fourier-extension-post/
