@@ -1,17 +1,17 @@
 ---
 layout: post
-title:  "When Fourier fails: SVDs and Fourier extensions of the third kind"
-date:   2024-02-12
-description: Learn about the magic of high-precision extensions using SVDs.
+title:  "When Fourier fails: Gram-Fourier extensions"
+date:   2024-02-18
+description: One extension to rule them all. How to efficiently reuse accurate SVD extensions.
 ---
 
 <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
-<p class="intro"><span class="dropcap">I</span>n today's post, we study the Fourier extensions of the third kind. </p>
+<p class="intro"><span class="dropcap">I</span>n today's post, we study the Gram-Fourier extensions. They are a cross between SVD and polynomial expansions and offer high accuracy and stability at the asymptotic cost of a single Fourier transform.</p>
 
 
 ## Intro
-This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In this post, we delve into Fourier extensions using truncated singular value decompositions. The method presented here is known as Fourier extension of the third kind as described in Boyd's insightful paper <a href="https://www.sciencedirect.com/science/article/abs/pii/S0021999102970233"> A Comparison of Numerical Algorithms for Fourier Extension of the First, Second, and Third Kinds </a>.
+This series of posts looks into different strategies for interpolating non-periodic, smooth data on a uniform grid with high accuracy. For an introduction, see the <a href="https://kunkelalexander.github.io/blog/when-fourier-fails-filters-post/">first post of this series</a>. In this post, we combine Fourier extensions of the third kind with polynomial expansions. The method presented here is known as Fourier extension of the third kind as described in Boyd's insightful paper <a href="https://www.sciencedirect.com/science/article/abs/pii/S0021999102970233"> A Comparison of Numerical Algorithms for Fourier Extension of the First, Second, and Third Kinds </a>.
 SVD extensions are particularly simple and beautiful: Instead of aiming to find a periodic extension and then Fourier transform, one instead solves a linear system whose solutions are the Fourier coeffients. You may find the accompanying <a href="https://github.com/KunkelAlexander/when-fourier-fails-python"> Python code on GitHub </a>. Can you guess the definition of the linear operator from looking at its matrix representation?
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_W.png" alt="">
@@ -20,16 +20,16 @@ SVD extensions are particularly simple and beautiful: Instead of aiming to find 
 Let $$\hat{f}(x)$$, defined in $$[0, \Theta]$$ be the periodic extension of $$f(x)$$, defined in $$[0, \chi]$$ where $$\Theta > \chi$$.
 $$\hat{f}(x)$$ allows for an accurate Fourier expansion as $$\hat{f}(x) = \sum_k a_k e^{\frac{2 \pi i}{\Theta} k x}$$. The crucial idea of Fourier extensions of the third kind is that the coefficients $$a_k$$ of the Fourier series can be obtained by solving a linear optimisation problem:
 
-$$\min_{a_k \forall k} \sum^{N-1}_{j=0} \left| \sum_{k} a_k e^{\frac{2 \pi i}{b} k x_j} - f(x_j)\right|^2 = \min_{\hat{a}} \sum^{N-1}_{j=0} \left|M\hat{a} - f\right|^2$$
+$$\min_{a_k \forall k} \sum^{N-1}_{j=0} \left| \sum_{k} a_k e^{\frac{2 \pi i}{b} k x_j} - f(x_j)\right|^2 = \min_{\hat{a}} \sum^{n-1}_{j=0} \left|M\hat{a} - f\right|^2$$
 
 The points $$x_j$$ are collocation points in the physical domain $$[0, \chi]$$. By solving the optimisation problem, we ensure that the mismatch between $$f(x)$$ and its extension $$\hat{f}(x)$$ in the physical domain is small. Does that mean that we can just invert $$M$$ to solve the optimisation problem? That would be the case if $$M$$ was invertible. But for a given function $$f$$, one can imagine many periodic extensions that follow $$f$$ in the physical domain and take different values in the extended domain. Clearly, the system is underdetermined and admits infinitely many solutions. In general, $$M$$ is non-square. While $$M$$ may be square-shaped if the number of collocation points $$N_{coll}$$ matches the number of points of Fourier coefficients $$N$$, the system is always ill-conditioned because it is close to being uninvertible. Fortunately, one can still solve the optimisation problem by computing the singular value decomposition of $$M$$ and truncating small singular values before inverting $$M$$.
 
 ## Collocation matrix
-In the following, we derive exact expressions for the above collocation matrix. Yet, solving the above complex expressions directly leads to poor results according to my numerical experiments. Instead, one should compute separate extensions for the real and imaginary parts of a complex input function. Moreover, Boyd suggests to split a general real input function $$g(x)$$ into its symmetric and antisymmetric parts $$S(x) = g(x)/2 + g(-x)/2$$ and $$A(x) = A(x)/2 - A(-x)/2$$. The optimisation is then carried out separately for $$S$$ and $$A$$. The symmetric part $$S(x) \equiv f(x)$$ allows for a periodic extension in terms of a cosine series whereas the antisymmetric part requires a sine series. In the following, we focus on the symmetric part, but the antisymmetric part follows analogously.
+According to my experience, solving the above complex expressions directly leads to poor results. Instead, one should compute separate extensions for the real and imaginary parts of a complex input function. Moreover, Boyd suggests to split a general real input function $$g(x)$$ into its symmetric and antisymmetric parts $$S(x) = g(x)/2 + g(-x)/2$$ and $$A(x) = A(x)/2 - A(-x)/2$$. The optimisation is then carried out separately for $$S$$ and $$A$$. The symmetric part $$S(x) \equiv f(x)$$ allows for a periodic extension in terms of a cosine series whereas the antisymmetric part requires a sine series. In the following, we focus on the symmetric part, but the antisymmetric part follows analogously.
 
-The Fourier coefficients of the cosine interpolation are the solutions of the matrix problem $$M\hat{a} = f$$, where $$ M_{ij} = \cos\left([j-1] \frac{\pi}{\Theta} x_i\right)$$ with $$i = 1, 2, ..., N_{coll}$$, $$j = 1, 2, ..., N$$ and $$f_i = f(x_i)$$ evaluated at $$i = 1, 2, ..., N_{coll}$$. The collocation points are uniformly distributed over the positive half of the physical interval $$x\in [0, \chi]$$ with $$ x_i \equiv \frac{(i-1) \chi}{N_{coll} - 1}$$ at the collocation indices $$i = 1, 2, ..., N_{coll} $$.
+The Fourier coefficients of the cosine interpolation are the solution of the matrix problem $$M\hat{a} = f$$, where $$ M_{ij} = \cos\left([j-1] \frac{\pi}{\Theta} x_i\right)$$ with $$i = 1, 2, ..., N_{coll}$$, $$j = 1, 2, ..., N$$ and $$f_i = f(x_i)$$ evaluated at $$i = 1, 2, ..., N_{coll}$$. The collocation points are uniformly distributed over the positive half of the physical interval $$x\in [0, \chi]$$ with $$ x_i \equiv \frac{(i-1) \chi}{N_{coll} - 1}$$ at the collocation indices $$i = 1, 2, ..., N_{coll} $$.
 
-The following code produces the initial plot of the collocation matrix $$M$$.
+The following code produces the initial visualisation of $$M$$.
 
 {%- highlight python -%}
 import numpy as np
@@ -69,11 +69,15 @@ The smaller the extension domain with respect to the physical domain, the better
 ## The need for iterative refinement
 
 With this knowledge, we can set out to compute a periodic extension of the even function $$f(x) = x^2$$ shown in the next plot.
+
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_1.png" alt="">
-The mismatch between the extension and the original function in the physical domain is good, but far from the desired machine precision.
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_1_accuracy.png" alt="">
+
+The mismatch between the extension and the original function in the physical domain is good, but far from the desired machine precision:
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_1_accuracy" alt="">
+
 As explained in Boyd's paper, iterative refinement is another helpful trick for ill-conditioned linear systems. Applying it increases the precision of the extension drastically:
-<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_2_accuracy.png" alt="">
+
+<img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_2_accuracy" alt="">
 
 
 {%- highlight python -%}
@@ -208,4 +212,4 @@ plt.show()
 {%- endhighlight -%}
 
 ## Remaining issues
-Fourier extensions of the third kind can be very accurate when overcollocation and iterative refinement are used. This accuracy comes at a price, however: A typical SVD factorisation requires $$\mathcal{O}(N^3)$$ operations. The iteration refinement adds $$\mathcal{O}(2 N^2 + 2 N_{coll}^2)$$ operations per iteration. The overcollocation requirement dictates that the resolution in the extension domain is lower than in the physical domain. When the number of collocation points is limited as in the case of interpolation or a PDE solver, the requirements of Fourier extensions of the third kind can be hardly met and are computationally prohibitively expensive. In addition, my own numerical experiments indicate that numerical stability of a PDE solver built with this method is an issue. Lastly, there are no analytical convergence guarantees for Fourier extensions of the third kind. Fortunately, all of these issues are resolved by Gram-Fourier extensions that we are going to look at in the last part of this series.
+Fourier extensions of the third kind can be very accurate when overcollocation and iterative refinement are used. This accuracy comes at a price, however: A typical SVD factorisation requires $$\mathcal{O}(N^3)$$ operations. The iteration refinement adds $$\mathcal{O}(2 N^2 + 2 N_{coll}^2)$$ operations per iteration. The overcollocation requirement dictates that $$\Delta x$$ is at least halved in the extension domain compared to the physical domain. When the number of collocation points is limited as in the case of interpolation or a PDE solver, the requirements of Fourier extensions of the third kind can be hardly met and are computationally prohibitively expensive. In addition, my own numerical experiments indicate that numerical stability of a PDE solver built with this method is an issue. Lastly, there are no analytical convergence guarantees for Fourier extensions of the third kind. Fortunately, all of these issues are resolved by Gram-Fourier extensions that we are going to look at in the last part of this series.
