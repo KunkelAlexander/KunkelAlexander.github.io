@@ -59,11 +59,10 @@ plt.show()
 {%- endhighlight -%}
 
 ## The right choice of physical and extension domain
-The next choice is to be made about the ideal domain sizes for the extension. The following figure shows different choices of the physical domain size $$\chi$$ as a function of the extension domain size $$\Theta$$.
+The next choice is to be made about the ideal domain sizes for the extension. The following figure shows different choices of the physical domain size $$\chi$$ as a function of the extension domain size $$\Theta$$. The plot shows that smaller extension domains lead to a better the conditioning of $$M$$. At the same time, the resulting extensions will be less smooth and produce less accurate results. There is a trade-off between accuracy and conditioning.
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_fig_8.png" alt="">
 
-The smaller the extension domain with respect to the physical domain, the better the conditioning of $$M$$.
 
 
 ## The need for iterative refinement
@@ -158,54 +157,10 @@ for i, frec in enumerate([frec1, frec2]):
 ## The need for overcollocation
 
 A part of the ill-conditioning of Fourier extensions stems from the fact that there are functions which are small on collocation grid, but large in the gaps between the interpolation points. This can be remedied by having a number of collocation points $$N_{coll}$$ much larger than $$N$$, the number of Fourier coefficients.  In this case, the scheme can detect large-amplitude oscillations of $$f$$ and produce more accurate extensions. The following plot shows reconstruction errors of $$f(x) = \cos(40.5 x)$$ on $$[0, \pi/2]$$ for different numbers of Fourier modes in two cases: a square-matrix $$M$$ where $$N_{coll} = N$$ and an overcollocation case where $$N_{coll} = 2\cdot N$$.
+The achievable accuracy in the second case is significantly higher.
 
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/svd_why_overcollocation.png" alt="">
 
-The achievable accuracy in the second case is significantly higher.
-{%- highlight python -%}
 
-theta = np.pi
-chi   = theta/2
-xext  = np.linspace(0, theta, 1000)
-ul    = np.argwhere(xext<chi)[-1][0]
-
-def func(x):
-    return np.cos(40.5*x)
-
-fig, ax = plt.subplots(1, 2, figsize=(5, 3), dpi=200, sharey=True)
-ax[0].set_title(r"$N_{coll}=N$")
-ax[0].set_xlabel(r"$N$")
-ax[1].set_xlabel(r"$N$")
-ax[0].set_ylabel("Reconstruction error")
-ax[0].set_yscale("log")
-ax[0].set_ylim([1e-14, 1e8])
-ax[1].set_ylim([1e-14, 1e8])
-ax[1].set_title(r"$N_{coll} = 2 N$")
-
-Ns         = np.arange(5, 100, 1)
-iterations = [0, 1, 2, 3]
-cutoff     = 1e-13
-threshold  = 2
-for axis, alpha in zip([0, 1], [1, 2]):
-    for iteration in iterations:
-        err = []
-        for N in Ns:
-            Ncoll = N * alpha
-            M, x  = get_fpic_su_matrix(N, Ncoll, theta, chi)
-            f     = func(x)
-            Minv  = truncated_svd_invert(M, cutoff)
-            a    = iterative_refinement(M, Minv, f, threshold = threshold, maxiter = iteration)
-            frec = reconstruct(xext, a, theta)
-            err.append(np.linalg.norm((frec - func(xext))[:ul]))
-
-        ax[axis].plot(Ns, err, label=r"$N_{iter}$" + f" = {iteration}", c = colors[iteration])
-
-
-ax[1].legend()
-fig.subplots_adjust(wspace = 0)
-plt.savefig(f"figures/svd_why_overcollocation.png", bbox_inches='tight')
-plt.show()
-{%- endhighlight -%}
-
-## Remaining issues
+## Issues
 Fourier extensions of the third kind can be very accurate when overcollocation and iterative refinement are used. This accuracy comes at a price, however: A typical SVD factorisation requires $$\mathcal{O}(N^3)$$ operations. The iteration refinement adds $$\mathcal{O}(2 N^2 + 2 N_{coll}^2)$$ operations per iteration. The overcollocation requirement dictates that the resolution in the extension domain is lower than in the physical domain. When the number of collocation points is limited as in the case of interpolation or a PDE solver, the requirements of Fourier extensions of the third kind can be hardly met and are computationally prohibitively expensive. In addition, my own numerical experiments indicate that numerical stability of a PDE solver built with this method is an issue. Lastly, there are no analytical convergence guarantees for Fourier extensions of the third kind. Fortunately, all of these issues are resolved by Gram-Fourier extensions that we are going to look at in the last part of this series.
