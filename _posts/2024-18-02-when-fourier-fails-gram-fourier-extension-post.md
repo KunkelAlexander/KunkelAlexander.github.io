@@ -112,12 +112,12 @@ plt.show()
 
 ## Accuracy
 The following two plots show the reconstruction errors for derivatives using the Gram-Fourier extension for the same parameters as above with the exception of $$m = n_{\Delta} = 14$$ as well as the decay of the Fourier coefficients for different values of $$m = n_{\Delta}$$.
-
+Note that the decay of the Fourier coefficients is very different from what I would have naively expected based on the smoothness of the extension at the boundary. So, please just ignore the legend. Instead, the behaviour of the Fourier coefficients seems to be dominated by the extension domain.
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_accuracy.png" alt="">
 <img src="{{ site.baseurl }}/assets/img/nonperiodicinterpolation-python/gramfe_decay.png" alt="">
 
 ## Conclusion
-This concludes the series of posts on non-periodic interpolation. Out of all the methods presented, the Gram-Fourier extension is the winner for me. It is fast, accurate and stable. Once the extension tables are computed, it allows for an easy and fast implementation using existing matrix multplication and FFT libraries on CPUs and GPUs.
+This concludes the series of posts on non-periodic interpolation. Out of all the methods presented, the Gram-Fourier extension is the most versatile. It is fast, accurate and stable. Once the extension tables are computed, it allows for an easy and fast implementation using existing matrix multplication and FFT libraries on CPUs and GPUs.
 
 ## Code
 The code accompanying this post is lengthy. I recommend you take a look at the Jupyter notebook in the Github repository.
